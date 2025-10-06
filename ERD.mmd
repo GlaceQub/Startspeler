@@ -1,0 +1,59 @@
+erDiagram
+    CUSTOMER ||--o{ ORDER : "1..1 -- 0..*"
+    TABLE ||--o{ ORDER : "1..1 -- 0..*"
+    STATUS ||--o{ ORDER : "1..1 -- 0..*"
+    ORDER ||--|{ ORDERITEM : "1..1 -- 0..*"
+    PRODUCT ||--o{ ORDERITEM : "1..1 -- 0..*"
+    GROUP ||--o{ CUSTOMER : "1..1 -- 0..*"
+    CATEGORY ||--o{ PRODUCT : "1..1 -- 0..*"
+
+    CUSTOMER {
+           int id PK "NNA"
+           string name "NNA"
+           string email "NA"
+           int groupId FK "NNA, DTN"
+           datetime lastOrder "NA"
+    }
+    GROUP {
+        int id PK "NNA"
+        string name "NNA"
+        float discount "NA"
+    }
+    TABLE {
+    int id PK "NNA"
+    int number "NNA"
+    bool isActive "NNA"
+    }
+    PRODUCT {
+        int id PK "NNA"
+        string name "NNA"
+        int categoryId FK "NNA, DTR"
+        float price "NNA"
+        int popularity "NA"
+    }
+    CATEGORY {
+        int id PK "NNA"
+        string name "NNA"
+    }
+    ORDER {
+           int id PK "NNA"
+           int customerId FK "NNA, DTR"
+           int tableId FK "NNA, DTN"
+           int statusId FK "NNA, DTN"
+           float totalPrice "NNA"
+           float priceAfterDiscount "NA"
+           datetime createdAt "NNA"
+           bool isPlacedByStaff "NNA"
+           string remarks "NA"
+    }
+    STATUS {
+        int id PK "NNA"
+        string name "NNA"
+    }
+    ORDERITEM {
+           int id PK "NNA"
+           int orderId FK "NNA, DTR"
+           int productId FK "NNA, DTN"
+           int quantity "NNA"
+           float price "NNA"
+    }
