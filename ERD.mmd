@@ -2,7 +2,7 @@ erDiagram
     CUSTOMER ||--o{ ORDER : "1..1 -- 0..*"
     TABLE ||--o{ ORDER : "1..1 -- 0..*"
     STATUS ||--o{ ORDER : "1..1 -- 0..*"
-    ORDER ||--|{ ORDERITEM : "1..1 -- 0..*"
+    ORDER ||--|{ ORDERITEM : "1..1 -- 1..*"
     PRODUCT ||--o{ ORDERITEM : "1..1 -- 0..*"
     GROUP ||--o{ CUSTOMER : "1..1 -- 0..*"
     CATEGORY ||--o{ PRODUCT : "1..1 -- 0..*"
