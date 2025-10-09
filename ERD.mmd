@@ -1,8 +1,7 @@
 %% Note: userId in PASSWORD should be unique to enforce one-to-one relationship with USER.
 
 erDiagram
-    USER ||--o{ USERORDER : "1..1 -- 0..*"
-    USERORDER ||--o{ ORDER : "1..1 -- 0..*"
+    USER ||--o{ ORDER : "1..1 -- 0..*"
     TABLE ||--o{ ORDER : "1..1 -- 0..*"
     ORDER ||--|{ ORDERITEM : "1..1 -- 1..*"
     PRODUCT ||--o{ ORDERITEM : "1..1 -- 0..*"
@@ -32,11 +31,6 @@ erDiagram
         int id PK "NNA"
         string name "NNA"
     }
-    USERORDER {
-        int id PK "NNA"
-        int userId FK "NNA, DTR"
-        datetime lastOrder "NA"
-    }
     GROUP {
         int id PK "NNA"
         string name "NNA"
@@ -60,7 +54,7 @@ erDiagram
     }
     ORDER {
         int id PK "NNA"
-        int userOrderId FK "NNA, DTR"
+        int userId FK "NNA, DTR"
         int tableId FK "NNA, DTN"
         int statusId FK "NNA, DTN"
         float totalPrice "NNA"
