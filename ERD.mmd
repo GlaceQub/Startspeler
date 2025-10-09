@@ -12,17 +12,18 @@ erDiagram
     ROLE ||--o{ USER : "1..1 -- 0..*"
     STATUS ||--o{ TABLE : "1..1 -- 0..*"
     STATUS ||--o{ ORDER : "1..1 -- 0..*"
-    USER ||--|| PASSWORD : "1..1 -- 0..1"
+    USER ||--|| PASSWORD : "1..1 -- 1..1"
 
     USER {
-        string name "NNA"
+        int id PK "NNA"
+        string name "NNA, UNIQUE"
         string email "NA"
         int groupId FK "NNA, DTN"
         int roleId FK "NNA, DTN"
     }
     PASSWORD {
         int id PK "NNA"
-        int userId FK "NNA, DTR"
+        int userId FK "NNA, DTR, UNIQUE"
         string passwordHash "NNA"
         string salt "NNA"
         datetime lastChanged "NA"
