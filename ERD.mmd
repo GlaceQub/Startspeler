@@ -11,6 +11,7 @@ erDiagram
     ROLE ||--o{ USER : "1..1 -- 0..*"
     STATUS ||--o{ TABLE : "1..1 -- 0..*"
     STATUS ||--o{ ORDER : "1..1 -- 0..*"
+    STATUS ||--o{ USER : "1..1 -- 0..*"
     USER ||--|| PASSWORD : "1..1 -- 1..1"
 
     USER {
@@ -19,6 +20,8 @@ erDiagram
         string email "NA"
         int groupId FK "NNA, DTN"
         int roleId FK "NNA, DTN"
+        int statusId FK "NNA, DTN"
+        datetime createdAt "NNA"
     }
     PASSWORD {
         int id PK "NNA"
