@@ -1,3 +1,5 @@
+%% Note: userId in PASSWORD should be unique to enforce one-to-one relationship with USER.
+
 erDiagram
     USER ||--o{ USERORDER : "1..1 -- 0..*"
     USERORDER ||--o{ ORDER : "1..1 -- 0..*"
@@ -10,13 +12,20 @@ erDiagram
     ROLE ||--o{ USER : "1..1 -- 0..*"
     STATUS ||--o{ TABLE : "1..1 -- 0..*"
     STATUS ||--o{ ORDER : "1..1 -- 0..*"
+    USER ||--|| PASSWORD : "1..1 -- 0..1"
 
     USER {
-        int id PK "NNA"
         string name "NNA"
         string email "NA"
         int groupId FK "NNA, DTN"
         int roleId FK "NNA, DTN"
+    }
+    PASSWORD {
+        int id PK "NNA"
+        int userId FK "NNA, DTR"
+        string passwordHash "NNA"
+        string salt "NNA"
+        datetime lastChanged "NA"
     }
     ROLE {
         int id PK "NNA"
