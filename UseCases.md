@@ -118,11 +118,11 @@ Bestelling is succesvol geplaatst en zichtbaar bij de bar.
 
 ## 10. E-mail koppelen
 ### Functionaliteit:
-Klant kan e-mailadres koppelen aan profiel.
+Gebruiker kan e-mailadres koppelen aan profiel.
 ### Voorwaarde:
 Klantnaam is geregistreerd.
 ### Normaal verloop:
-Het systeem toont een pagina on e-mailadres te linken aan eenklant. De gebruiker geeft een klantnaam en e-mailadres in. Het systeem koppelt dan het e-mailadres de klant.
+Het systeem toont een pagina on e-mailadres te linken aan een klant. De gebruiker geeft een klantnaam en e-mailadres in. Het systeem koppelt dan het e-mailadres de klant.
 > **Opmerking:** Eventueel maken met bevestigings code
 ### Uitzonderingen:
 - E-mailadres bestaat al: toont melding en vraagt voor ander e-mailadres.
@@ -138,3 +138,15 @@ Klantnaam is geregistreerd en admin is ingelogd.
 Het systeem toont een overzichtspagina van alle bestellingen van de klant. Het systeem berekend de totaalprijs. De Admin verekend met extern systeem. De Admin duid de bestellingen aan als betaald.
 ### Definition of Done:
 Bestellingen zijn afgerond en aangeduid als betaald in het systeem.
+
+## 12. QR-code scannen
+### Functionaliteit:
+Gebruiker scant een QR-code met zijn telefoon om direct naar de applicatiepagina te gaan waar hij een bestelling kan plaatsen.
+### Voorwaarde:
+Er is een geldige QR-code aanwezig op de tafel.
+### Normaal verloop:
+De gebruiker opent de camera of QR-app op zijn telefoon en scant de QR-code die op de tafel aanwezig is. De QR-code leidt de gebruiker direct naar de juiste pagina van de applicatie, waar hij een scherm krijgt om een bestellingen te plaatsen.
+### Uitzonderingen:
+- QR-code is ongeldig of niet gekoppeld aan een tafel: systeem toont een foutmelding.
+### Definition of Done:
+De gebruiker is succesvol doorgestuurd naar het bestelscherm en kan een bestelling plaatsen.
