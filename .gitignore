@@ -1,0 +1,4 @@
+# Ignore Visual Studio Code settings folder
+.vscode/
+# Ignore the OwnNotes folder and everything inside it
+OwnNotes/
