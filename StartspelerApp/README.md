@@ -118,6 +118,22 @@ G. Build & deploy frontend to Netlify (free)
    - Publish directory: `jsApp/build/distributions`
 2. Use runtime `config.json` on Netlify (upload /config.json or expose it as a static file) to change backend URL for demos without a rebuild.
 
+## Setup instructions
+
+1. Copy `public/config.example.json` to `public/config.json` and fill in your backend and Supabase URLs.
+2. Use `scripts/dev-local.sh` to start local dev (backend, frontend, MySQL).
+3. Use `scripts/demo-ngrok.sh` to run backend and expose with ngrok for remote demo.
+4. Place Flyway migration SQL files in `server/src/main/resources/db/migration/`.
+
+## Example config.json
+```
+{
+  "backendUrl": "http://localhost:8080",
+  "supabaseUrl": "https://your-project.supabase.co",
+  "supabaseAnonKey": "public-anon-key"
+}
+```
+
 Prioritized next tasks (practical sprint for a student POC)
 1. (Immediate) Make frontend fetch `config.json` at startup and add `public/config.example.json`.
 2. (Immediate) Add devServer proxy in `jsApp/build.gradle.kts`.

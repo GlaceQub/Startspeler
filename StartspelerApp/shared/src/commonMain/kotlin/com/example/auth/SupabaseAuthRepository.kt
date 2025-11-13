@@ -4,6 +4,7 @@ import com.example.network.createHttpClient
 import io.ktor.client.request.*
 import io.ktor.client.statement.*
 import io.ktor.http.*
+import kotlinx.datetime.Clock
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.coroutines.Dispatchers
@@ -20,7 +21,7 @@ class SupabaseAuthRepository(
     private val client = createHttpClient()
     private val json = Json { ignoreUnknownKeys = true }
 
-    suspend fun signInWithEmail(email: String, password: String): Result<AuthTokens> = withContext(Dispatchers.IO) {
+    suspend fun signInWithEmail(email: String, password: String): Result<AuthTokens> = withContext(Dispatchers.Default) {
         try {
             val url = "$supabaseUrl/auth/v1/token?grant_type=password"
             val response: HttpResponse = client.post(url) {
@@ -33,7 +34,7 @@ class SupabaseAuthRepository(
             val tokens = AuthTokens(
                 accessToken = parsed.access_token,
                 refreshToken = parsed.refresh_token,
-                expiresAtEpochSeconds = if (parsed.expires_in > 0) (System.currentTimeMillis() / 1000) + parsed.expires_in else null
+                expiresAtEpochSeconds = if (parsed.expires_in > 0) (Clock.System.now().toEpochMilliseconds() / 1000) + parsed.expires_in else null
             )
             storage.save(tokens)
             Result.success(tokens)

@@ -1,0 +1,12 @@
+{
+  "name": "startspelerapp-jsapp",
+  "version": "1.0.0",
+  "description": "Local server for StartspelerApp jsApp",
+  "scripts": {
+    "copy-bundle": "copy build\\kotlin-webpack\\js\\productionExecutable\\jsApp.js src\\main\\resources\\public\\jsApp.js",
+    "start": "serve -s src/main/resources/public"
+  },
+  "devDependencies": {
+    "serve": "^14.0.1"
+  }
+}

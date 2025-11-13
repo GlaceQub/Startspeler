@@ -1,0 +1,6 @@
+{
+  "backendUrl": "http://localhost:8080",
+  "supabaseUrl": "https://your-project.supabase.co",
+  "supabaseAnonKey": "public-anon-key"
+}
+
