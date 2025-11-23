@@ -2,3 +2,7 @@
 build/
 .idea/
 node_modules/
+
+# Local env files
+.env
+server/.env
