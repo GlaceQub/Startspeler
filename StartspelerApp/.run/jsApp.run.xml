@@ -2,7 +2,7 @@
   <configuration default="false" name="jsApp" type="GradleRunConfiguration" factoryName="Gradle">
     <ExternalSystemSettings>
       <option name="executionName" />
-      <option name="externalProjectPath" value="$PROJECT_DIR$/jsApp" />
+      <option name="externalProjectPath" value="$PROJECT_DIR$/StartspelerApp/jsApp" />
       <option name="externalSystemIdString" value="GRADLE" />
       <option name="scriptParameters" value="" />
       <option name="taskDescriptions">
