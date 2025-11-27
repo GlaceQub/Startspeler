@@ -2,3 +2,5 @@
 .vscode/
 # Ignore the OwnNotes folder and everything inside it
 OwnNotes/
+# Ignore database docker setup folder
+Database/docker/.env
