@@ -8,6 +8,15 @@ import org.jetbrains.exposed.sql.transactions.transaction
 import java.io.File
 import db.tables.User
 import auth.UserManager
+import io.ktor.server.engine.embeddedServer
+import io.ktor.server.netty.Netty
+import io.ktor.server.application.*
+import io.ktor.server.plugins.contentnegotiation.*
+import io.ktor.serialization.kotlinx.json.json
+import io.ktor.server.routing.*
+import com.example.server.routes.authRoutes
+import io.ktor.server.plugins.cors.routing.*
+import io.ktor.server.response.*
 
 fun main() {
     //region Database setup
@@ -89,5 +98,32 @@ fun main() {
     // Try authenticating the admin user
     val authResult = auth.authenticate("admin", "St4rtsp3l3r")
     println("Authentication for user 'admin' with default password: $authResult")
+    //endregion
+
+    //region Ktor HTTP server
+    embeddedServer(Netty, port = 8080) {
+        install(ContentNegotiation) { json() }
+        install(CORS) {
+            anyHost()
+            allowHeader("Content-Type")
+        }
+        routing {
+            intercept(ApplicationCallPipeline.Call) {
+                try {
+                    proceed()
+                } catch (t: Throwable) {
+                    t.printStackTrace()
+                    throw t
+                }
+            }
+
+            // Simple health endpoint to verify server + DB
+            get("/health") {
+                call.respondText("OK")
+            }
+
+            authRoutes(auth)
+        }
+    }.start(wait = true)
     //endregion
 }

@@ -1,5 +1,6 @@
 plugins {
     kotlin("jvm")
+    kotlin("plugin.serialization")
     application
 }
 
@@ -37,6 +38,7 @@ dependencies {
     implementation("org.jetbrains.exposed:exposed-kotlin-datetime:0.45.0")
     implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.4.1")
 
+    implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.4")
 }
 
 application {

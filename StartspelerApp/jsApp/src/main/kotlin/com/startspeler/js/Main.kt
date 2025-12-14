@@ -1,6 +1,5 @@
 package com.startspeler.js
 
-import com.startspeler.ui.LoginPage
 import react.FC
 import react.Props
 import react.create
@@ -21,11 +20,5 @@ fun main() {
 }
 
 private val App = FC<Props> {
-    LoginPage {
-        onSignIn = { email, password ->
-            alert("Sign in clicked: email=$email, password=$password")
-        }
-        loading = false
-        error = null
-    }
+    LoginScreen {}
 }
