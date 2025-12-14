@@ -6,3 +6,15 @@ node_modules/
 # Local env files
 .env
 server/.env
+
+# Kotlin compiler session files
+.kotlin/
+.kotlin/sessions/
+
+# Ignore IntelliJ project files
+*.iml
+out/
+
+# Ignore OS generated files
+.DS_Store
+Thumbs.db
