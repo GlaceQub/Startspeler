@@ -32,6 +32,8 @@ fun main() {
 //    }
 //}
 private val App = FC<Props> {
+    LoginScreen {}
+    /*
     var page by useState("login")
 
     when (page) {
@@ -53,4 +55,5 @@ private val App = FC<Props> {
             onGoToBestel = { page = "bestel" }
         }
     }
+    */
 }

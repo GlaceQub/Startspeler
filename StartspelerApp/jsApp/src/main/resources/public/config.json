@@ -1,6 +1,4 @@
 {
-  "backendUrl": "http://localhost:8080",
-  "supabaseUrl": "https://zvboekylrhvqvtgyhqin.supabase.co",
-  "supabaseAnonKey": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inp2Ym9la3lscmh2cXZ0Z3locWluIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMwNDAwMjEsImV4cCI6MjA3ODYxNjAyMX0.s4JO8WS1H1tapv-czYSiC6tfK8M3KM3TiNifFxYB9PM"
+  "backendUrl": "http://localhost:8080"
 }
 

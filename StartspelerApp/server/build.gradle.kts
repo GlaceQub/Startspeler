@@ -1,5 +1,6 @@
 plugins {
     kotlin("jvm")
+    kotlin("plugin.serialization")
     application
 }
 
@@ -23,15 +24,21 @@ dependencies {
     implementation("com.zaxxer:HikariCP:5.0.1")
 
     // Optional: Kotlin-friendly SQL library (Exposed). Uncomment if you want an ORM-like DSL.
-    implementation("org.jetbrains.exposed:exposed-core:0.41.1")
-    implementation("org.jetbrains.exposed:exposed-dao:0.41.1")
-    implementation("org.jetbrains.exposed:exposed-jdbc:0.41.1")
+    implementation("org.jetbrains.exposed:exposed-core:0.45.0")
+    implementation("org.jetbrains.exposed:exposed-dao:0.45.0")
+    implementation("org.jetbrains.exposed:exposed-jdbc:0.45.0")
 
     // Password hashing (bcrypt) - use to verify stored password hashes securely
     implementation("at.favre.lib:bcrypt:0.9.0")
 
     // dotenv loader to reuse your existing .env file (e.g., the docker-compose .env)
     implementation("io.github.cdimascio:java-dotenv:5.2.2")
+
+    // Datetime support for Exposed
+    implementation("org.jetbrains.exposed:exposed-kotlin-datetime:0.45.0")
+    implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.4.1")
+
+    implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.4")
 }
 
 application {

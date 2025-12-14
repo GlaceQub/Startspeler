@@ -64,3 +64,9 @@ kotlin {
         }
     }
 }
+
+tasks.named<Copy>("jsProcessResources") {
+    from("src/main/resources/public") {
+        into("")
+    }
+}

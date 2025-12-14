@@ -5,7 +5,7 @@ This file combines the zero‑cost local POC summary with a concrete step‑by�
 
 Quick summary (one line)
 - Frontend: Kotlin/JS PWA (StartspelerApp/jsApp) — develop on `localhost`, build static bundle for Netlify.  
-- Shared: KMP shared module (StartspelerApp/shared) for models, HTTP and auth logic.  
+- Shared: KMP shared module (StartspelerApp/shared) for db.tables, HTTP and auth logic.  
 - Backend: Ktor JVM running locally (or in Docker) — put DB access behind repositories so DB can be swapped between Postgres (dev) and MySQL (prod).
 - DB/Auth: Supabase (cloud free project for fastest start) for dev auth and Postgres testing; add local MySQL tests and Flyway migrations for production parity.
 
