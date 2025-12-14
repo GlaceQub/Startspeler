@@ -75,7 +75,13 @@ You can now connect to your local MySQL database using a client (like MySQL Work
 - **Password:** `examplepass`
 - **Database:** `exampledb`
 
-## 6. Stop and Remove the Database
+## 6. Add seeding data
+
+Download the workbench from their official site: https://dev.mysql.com/downloads/workbench/ or use extension in VS Code
+
+Execute the MySQL Query `./Database/SeedingData.sql` inside ur MySQL Workbench.
+
+## 7. Stop and Remove the Database
 
 To stop the database, run:
 

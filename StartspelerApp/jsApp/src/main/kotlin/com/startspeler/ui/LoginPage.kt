@@ -7,6 +7,7 @@ import mui.material.TextField
 import mui.material.Button
 import mui.material.ButtonVariant
 import mui.material.styles.TypographyVariant
+import react.dom.html.ReactHTML.div
 import react.dom.onChange
 import web.html.InputType
 import web.html.password
@@ -16,6 +17,7 @@ external interface LoginPageProps : Props {
     var onSignIn: (email: String, password: String) -> Unit
     var loading: Boolean
     var error: String?
+    var onGoToBestel: (() -> Unit)? // navigation callback
 }
 
 val LoginPage = FC<LoginPageProps> { props ->
@@ -65,5 +67,18 @@ val LoginPage = FC<LoginPageProps> { props ->
                 +(err.toString()) // Ensure error is always rendered as a string
             }
         }
+    }
+
+    Box {
+        sx = js("({ position: 'absolute', bottom: 20, textAlign: 'center', width: '100%' })")
+
+        props.onGoToBestel?.let { goToBestel ->
+            Button {
+                variant = ButtonVariant.text
+                onClick = { _ -> goToBestel() }
+                +"Go to Bestel"
+            }
+        }
+
     }
 }
