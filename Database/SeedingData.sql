@@ -6,159 +6,127 @@ CREATE DATABASE startspelerdb;
 USE startspelerdb;
 
 -- Tabellen aanmaken
-CREATE TABLE STATUS (
+
+CREATE TABLE `Status` (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(50) NOT NULL
+   `name`VARCHAR(50) NOT NULL
 );
 
-CREATE TABLE ROLE (
+CREATE TABLE `Role` (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(50) NOT NULL
+   `name`VARCHAR(50) NOT NULL
 );
 
-CREATE TABLE `GROUP` (
+CREATE TABLE `Group` (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(50) NOT NULL,
+   `name`VARCHAR(50) NOT NULL,
     discount FLOAT
 );
 
-CREATE TABLE CATEGORY (
+CREATE TABLE Category (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(50) NOT NULL
+   `name`VARCHAR(50) NOT NULL
 );
 
-CREATE TABLE USER (
+CREATE TABLE `User` (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(100) NOT NULL UNIQUE,
+   `name`VARCHAR(100) NOT NULL UNIQUE,
     email VARCHAR(100),
     groupId INT NOT NULL,
     roleId INT NOT NULL,
-    FOREIGN KEY (groupId) REFERENCES `GROUP` (id),
-    FOREIGN KEY (roleId) REFERENCES ROLE (id)
+    StatusId INT NOT NULL,
+    createdAt DATETIME NOT NULL,
+    FOREIGN KEY (groupId) REFERENCES `Group` (id),
+    FOREIGN KEY (roleId) REFERENCES `Role` (id),
+    FOREIGN KEY (StatusId) REFERENCES `Status` (id)
 );
 
-CREATE TABLE PASSWORD (
+CREATE TABLE `Password` (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    userId INT UNIQUE NOT NULL,
+    UserId INT UNIQUE NOT NULL,
     passwordHash VARCHAR(255) NOT NULL,
     salt VARCHAR(255) NOT NULL,
     lastChanged DATETIME,
-    FOREIGN KEY (userId) REFERENCES USER (id)
+    FOREIGN KEY (UserId) REFERENCES `User` (id)
 );
 
-CREATE TABLE TABLES (
+CREATE TABLE `Table` (
     id INT AUTO_INCREMENT PRIMARY KEY,
     number INT NOT NULL,
-    statusId INT NOT NULL,
-    FOREIGN KEY (statusId) REFERENCES STATUS (id)
+    StatusId INT NOT NULL,
+    FOREIGN KEY (StatusId) REFERENCES `Status` (id)
 );
 
-CREATE TABLE PRODUCT (
+CREATE TABLE Product (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    name VARCHAR(100) NOT NULL,
+   `name`VARCHAR(100) NOT NULL,
     categoryId INT NOT NULL,
     price FLOAT NOT NULL,
     popularity INT,
-    FOREIGN KEY (categoryId) REFERENCES CATEGORY (id)
+    FOREIGN KEY (categoryId) REFERENCES Category (id)
 );
 
-CREATE TABLE INVENTORY (
+CREATE TABLE Inventory (
     id INT AUTO_INCREMENT PRIMARY KEY,
     productId INT NOT NULL,
     quantity INT NOT NULL,
     minimumQuantity INT,
     lastUpdated DATETIME NOT NULL,
-    FOREIGN KEY (productId) REFERENCES PRODUCT (id)
+    FOREIGN KEY (productId) REFERENCES Product (id)
 );
 
-CREATE TABLE ORDER_TABLE (
+CREATE TABLE `Order` (
     id INT AUTO_INCREMENT PRIMARY KEY,
-    userId INT NOT NULL,
+    UserId INT NOT NULL,
     tableId INT NOT NULL,
-    statusId INT NOT NULL,
+    StatusId INT NOT NULL,
     totalPrice FLOAT NOT NULL,
     priceAfterDiscount FLOAT,
     createdAt DATETIME NOT NULL,
     isPlacedByStaff BOOLEAN NOT NULL,
     remarks VARCHAR(255),
-    FOREIGN KEY (userId) REFERENCES USER (id),
-    FOREIGN KEY (tableId) REFERENCES TABLES (id),
-    FOREIGN KEY (statusId) REFERENCES STATUS (id)
+    FOREIGN KEY (UserId) REFERENCES `User` (id),
+    FOREIGN KEY (tableId) REFERENCES `Table` (id),
+    FOREIGN KEY (StatusId) REFERENCES `Status` (id)
 );
 
-CREATE TABLE ORDERITEM (
+CREATE TABLE Orderitem (
     id INT AUTO_INCREMENT PRIMARY KEY,
     orderId INT NOT NULL,
     productId INT NOT NULL,
     quantity INT NOT NULL,
     price FLOAT NOT NULL,
-    FOREIGN KEY (orderId) REFERENCES ORDER_TABLE (id),
-    FOREIGN KEY (productId) REFERENCES PRODUCT (id)
+    FOREIGN KEY (orderId) REFERENCES `Order` (id),
+    FOREIGN KEY (productId) REFERENCES Product (id)
 );
 
 -- Testdata invoegen
 INSERT INTO
-    STATUS (name)
+    `Status` (`name`)
 VALUES ('actief'),
     ('inactief'),
     ('in behandeling'),
     ('betaald');
 
 INSERT INTO
-    ROLE (name)
+    `Role` (`name`)
 VALUES ('beheerder'),
     ('medewerker'),
     ('klant');
 
 INSERT INTO
-    `GROUP` (name, discount)
+    `Group` (`name`, discount)
 VALUES ('standaard', 0),
     ('VIP', 10),
     ('Community Managers', 7.5);
 
-INSERT INTO CATEGORY (name) VALUES ('Bier'), ('Wijn'), ('Frisdrank');
+INSERT INTO Category (`name`) VALUES ('Bier'), ('Wijn'), ('Frisdrank');
+
+INSERT INTO `Table` (`number`, StatusId) VALUES (1, 1), (2, 2), (3, 1);
 
 INSERT INTO
-    USER (name, email, groupId, roleId)
-VALUES (
-        'Anouk',
-        'anouk@voorbeeld.nl',
-        1,
-        1
-    ),
-    (
-        'Bram',
-        'bram@voorbeeld.nl',
-        2,
-        2
-    ),
-    ('Charlotte', NULL, 3, 3);
-
-INSERT INTO
-    PASSWORD (
-        userId,
-        passwordHash,
-        salt,
-        lastChanged
-    )
-VALUES (
-        1,
-        'wachtwoord1',
-        'salt1',
-        NOW()
-    ),
-    (
-        2,
-        'wachtwoord2',
-        'salt2',
-        NOW()
-    );
-
-INSERT INTO TABLES (number, statusId) VALUES (1, 1), (2, 2), (3, 1);
-
-INSERT INTO
-    PRODUCT (
-        name,
+    `Product` (
+        `name`,
         categoryId,
         price,
         popularity
@@ -170,7 +138,7 @@ VALUES ('Stella', 1, 3.5, 10),
     ('Merlot', 2, 4.0, 5);
 
 INSERT INTO
-    INVENTORY (
+    Inventory (
         productId,
         quantity,
         minimumQuantity,
