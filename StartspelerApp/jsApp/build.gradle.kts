@@ -35,6 +35,7 @@ kotlin {
         compilations["main"].defaultSourceSet {
             kotlin.srcDir("src/main/kotlin/com/startspeler/js")
             kotlin.srcDir("src/main/kotlin/com/startspeler/ui")
+            kotlin.srcDir("src/main/kotlin/com/startspeler/models")
             resources.srcDir("src/main/resources")
         }
     }
