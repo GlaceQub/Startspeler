@@ -2,7 +2,7 @@
   <configuration default="false" name="jsApp" type="GradleRunConfiguration" factoryName="Gradle">
     <ExternalSystemSettings>
       <option name="executionName" />
-      <option name="externalProjectPath" value="$PROJECT_DIR$/StartspelerApp/jsApp" />
+      <option name="externalProjectPath" value="$PROJECT_DIR$/jsApp" />
       <option name="externalSystemIdString" value="GRADLE" />
       <option name="scriptParameters" value="" />
       <option name="taskDescriptions">
@@ -17,11 +17,8 @@
     </ExternalSystemSettings>
     <ExternalSystemDebugServerProcess>true</ExternalSystemDebugServerProcess>
     <ExternalSystemReattachDebugProcess>true</ExternalSystemReattachDebugProcess>
-    <ExternalSystemDebugDisabled>false</ExternalSystemDebugDisabled>
     <DebugAllEnabled>false</DebugAllEnabled>
     <RunAsTest>false</RunAsTest>
-    <GradleProfilingDisabled>true</GradleProfilingDisabled>
-    <GradleCoverageDisabled>true</GradleCoverageDisabled>
     <method v="2" />
   </configuration>
 </component>
