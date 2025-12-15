@@ -8,6 +8,7 @@ import mui.material.Toolbar
 import mui.material.Button
 import mui.material.ButtonVariant
 import mui.material.Typography
+import react.dom.html.ReactHTML
 import kotlin.js.json
 
 external interface NavBarProps : Props {
@@ -18,44 +19,49 @@ val Navbar = FC<NavBarProps> { props ->
     val current = props.current ?: ""
 
     AppBar {
-        // default styling van AppBar; je kunt position attribuut toevoegen indien gewenst
-        Toolbar {
-            Typography {
-                asDynamic().sx = json("flexGrow" to 0, "fontWeight" to 700, "mr" to 2)
-                +"Startspeler"
-            }
+        asDynamic().className = "navbar"
+        elevation = 0
+        asDynamic().sx = json(
+            "backgroundColor" to "#2B3078",
+            "color" to "#ffffff"
+        )
 
-            Button {
-                onClick = { _ -> window.location.hash = "#/login" }
-                variant = ButtonVariant.contained
-                asDynamic().sx = json(
-                    "color" to "#000000",
-                    "backgroundColor" to if (current == "login") "#e0e0e0" else "#f5f5f5",
-                    "textTransform" to "none",
-                    "fontWeight" to if (current == "login") 700 else 400,
-                    "ml" to 1,
-                    "px" to 1
-                )
-                Typography {
-                    +"Login"
+        Toolbar {
+            ReactHTML.span{
+                asDynamic().className = "logo"
+
+                ReactHTML.img {
+                    asDynamic().src = "/images/logostartspeler.png"
+                    asDynamic().alt = "Startspeler Logo"
                 }
             }
 
-            Button {
-                onClick = { _ -> window.location.hash = "#/bestel" }
-                variant = ButtonVariant.contained
-                asDynamic().sx = json(
-                    "color" to "#000000",
-                    "backgroundColor" to if (current == "bestel") "#e0e0e0" else "#f5f5f5",
-                    "textTransform" to "none",
-                    "fontWeight" to if (current == "bestel") 700 else 400,
-                    "ml" to 1,
-                    "px" to 1
-                )
-                Typography {
+            ReactHTML.span {
+                asDynamic().className = "buttons"
+
+                // LOGIN knop
+                Button {
+                    onClick = { _ -> window.location.hash = "#/login" }
+                    variant = ButtonVariant.contained
+                    disableElevation = true
+                    val cls = if (current == "login") "nav-button active" else "nav-button"
+                    asDynamic().className = cls
+                    if (current == "login") asDynamic().ariaCurrent = "page"
+                    +"Login"
+                }
+
+                // BESTEL knop
+                Button {
+                    onClick = { _ -> window.location.hash = "#/bestel" }
+                    variant = ButtonVariant.contained
+                    disableElevation = true
+                    val cls = if (current == "bestel") "nav-button active" else "nav-button"
+                    asDynamic().className = cls
+                    if (current == "bestel") asDynamic().ariaCurrent = "page"
                     +"Bestel"
                 }
             }
         }
     }
 }
+
