@@ -1,10 +1,10 @@
-/* Grote AppBar en duidelijke kleur */
+/* AppBar */
 .navbar.MuiPaper-root {
   background-color: #2B3078 !important;
   color: #ffffff !important;
 }
 
-/* Toolbar: consistente grotere hoogte */
+/* Toolbar */
 .navbar .MuiToolbar-root {
   min-height: 150px !important;
   height: 150px !important;
@@ -15,7 +15,7 @@
   align-items: center !important;
 }
 
-/* Logo-linkerzijde, groter */
+/* Logo */
 .navbar .logo {
   display: flex;
   align-items: center;
@@ -35,7 +35,7 @@
   letter-spacing: 0.2px;
 }
 
-/* Buttons container: exact horizontaal gecentreerd in toolbar */
+/* Buttons container */
 .navbar .buttons {
   position: absolute !important;
   left: 50% !important;
@@ -47,18 +47,18 @@
   pointer-events: auto;
 }
 
-/* Pill-knoppen: 2x zo groot als voorheen (tekst + padding + radius).
-   Let op: border blijft 2px voor visuele balans. */
+/* Pill-knoppen */
 .navbar .nav-button.MuiButton-root,
 .navbar .nav-button.MuiButton-contained {
   background-color: #ffffff !important;
   color: #2B3078 !important;
-  border: 2px solid #2B3078 !important;   /* behoud 2px border voor nettere look */
+  border: 2px solid #2B3078 !important;
   text-transform: none !important;
+  font-family: "Roboto", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
   font-weight: 900 !important;
-  font-size: 35px !important;            /* 2x van 22px */
-  padding: 28px 72px !important;         /* 2x van 14px 36px */
-  border-radius: 56px !important;        /* 2x van 28px */
+  font-size: 35px !important;
+  padding: 28px 72px !important;
+  border-radius: 56px !important;
   box-shadow: none !important;
   min-width: 0 !important;
   line-height: 1 !important;
@@ -68,14 +68,14 @@
   justify-content: center !important;
 }
 
-/* Hoverstate */
+/* Hover */
 .navbar .nav-button.MuiButton-root:hover,
 .navbar .nav-button.MuiButton-contained:hover {
   background-color: #f3f8ff !important;
   border-color: #22356a !important;
 }
 
-/* Actieve knop stijling */
+/* Actief */
 .navbar .nav-button.active.MuiButton-root,
 .navbar .nav-button.active.MuiButton-contained {
   background-color: #ffffff !important;
@@ -84,13 +84,13 @@
   box-shadow: none !important;
 }
 
-/* Focus outline */
+/* Focus */
 .navbar .nav-button.MuiButton-root:focus {
   outline: 3px solid rgba(34,53,106,0.12);
   outline-offset: 3px;
 }
 
-/* Responsive: schaal alles naar beneden op kleinere schermen */
+/* Responsive >= 700px */
 @media (max-width: 1100px) {
   .navbar .nav-button.MuiButton-root,
   .navbar .nav-button.MuiButton-contained {
@@ -101,18 +101,81 @@
   .navbar .buttons { gap: 1rem !important; }
 }
 
+/* Mobile: logo bovenaan, buttons daaronder */
 @media (max-width: 700px) {
-  .navbar .nav-button.MuiButton-root,
-  .navbar .nav-button.MuiButton-contained {
-    font-size: 28px !important;
-    padding: 12px 24px !important;
-    border-radius: 28px !important;
+  .navbar .MuiToolbar-root {
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-height: auto !important;
+    height: auto !important;
+    padding-top: 12px !important;
+    padding-bottom: 12px !important;
+  }
+
+  .navbar .logo {
+    margin-bottom: 12px !important;
+  }
+
+  .navbar .logo img {
+    height: 40px !important;
   }
 
   .navbar .buttons {
     position: static !important;
     transform: none !important;
-    margin-left: auto !important;
+    margin-left: 0 !important;
+    margin-top: 8px !important;
     gap: 0.5rem !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    width: 100% !important;
+    flex-wrap: wrap !important;
+    padding-left: 12px !important;
+    padding-right: 12px !important;
+    box-sizing: border-box !important;
+  }
+
+  .navbar .nav-button.MuiButton-root,
+  .navbar .nav-button.MuiButton-contained {
+    font-size: 28px !important;
+    padding: 12px 24px !important;
+    border-radius: 28px !important;
+    margin: 6px !important;
+  }
+}
+
+/* Vanaf 1500px: buttons onder het logo */
+@media (max-width: 1500px) {
+  .navbar .MuiToolbar-root {
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    min-height: auto !important;
+    height: auto !important;
+    padding-top: 20px !important;
+    padding-bottom: 20px !important;
+  }
+
+  .navbar .logo {
+    margin-bottom: 20px !important;
+  }
+
+  .navbar .buttons {
+    position: static !important;
+    transform: none !important;
+    left: auto !important;
+    margin-left: 0 !important;
+    margin-top: 8px !important;
+    gap: 1.25rem !important;
+    display: flex !important;
+    justify-content: center !important;
+    align-items: center !important;
+    width: 100% !important;
+    flex-wrap: nowrap !important;
+    padding-left: 24px !important;
+    padding-right: 24px !important;
+    box-sizing: border-box !important;
   }
 }
