@@ -1,14 +1,17 @@
 package com.startspeler.js
 
 import com.startspeler.ui.BestelPage
-import com.startspeler.ui.LoginPage import com.startspeler.js.Navbar
+import com.startspeler.js.Navbar
 import kotlinx.browser.window
+import mui.material.CircularProgress
 import react.FC
 import react.Props
 import react.create
 import react.dom.client.createRoot
 import react.dom.client.Root
+import react.dom.html.ReactHTML.div
 import react.useEffect
+import react.useEffectOnce
 import react.useState
 import web.dom.document
 import web.dom.Element
@@ -33,6 +36,17 @@ fun main() {
 
 private val App = FC<Props> {
     var route by useState(currentRoute())
+    var loggedIn by useState(false)
+    var authChecked by useState(false)
+
+    // On mount, check for JWT in localStorage and set loggedIn if present
+    useEffectOnce {
+        val storedToken = window.localStorage.getItem("jwtToken")
+        if (storedToken != null && storedToken.isNotBlank()) {
+            loggedIn = true
+        }
+        authChecked = true
+    }
 
     // alleen side-effect: luister naar hash changes en cleanup terugzetten
     useEffect(emptyList<Unit>()) {
@@ -40,18 +54,31 @@ private val App = FC<Props> {
         window.onhashchange = {
             route = currentRoute()
         }
-
     }
 
-    Navbar{
-        current = route
-    }
-
-    when (route) {
-        "login" -> LoginScreen {
-            //onGoToBestel = { window.location.hash = "#/bestel" } // navigate to BestelPage
+    if (!authChecked) {
+        div {
+            style = js("{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }")
+            CircularProgress {}
         }
-        "bestel" -> BestelPage { } // render BestelPage
-        else -> LoginScreen {}
+    } else {
+        Navbar{
+            current = route
+            isLoggedIn = loggedIn
+        }
+
+        when (route) {
+            "login" -> LoginScreen {
+                this.loggedIn = loggedIn
+                this.setLoggedIn = { loggedIn = it }
+            }
+            "bestel" -> BestelPage {
+                // You can pass loggedIn here if BestelPage needs it
+            }
+            else -> LoginScreen {
+                this.loggedIn = loggedIn
+                this.setLoggedIn = { loggedIn = it }
+            }
+        }
     }
 }

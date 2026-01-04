@@ -13,10 +13,12 @@ import kotlin.js.json
 
 external interface NavBarProps : Props {
     var current: String?
+    var isLoggedIn: Boolean
 }
 
 val Navbar = FC<NavBarProps> { props ->
     val current = props.current ?: ""
+    val isLoggedIn = props.isLoggedIn
 
     AppBar {
         asDynamic().className = "navbar"
@@ -47,7 +49,7 @@ val Navbar = FC<NavBarProps> { props ->
                     val cls = if (current == "login") "nav-button active" else "nav-button"
                     asDynamic().className = cls
                     if (current == "login") asDynamic().ariaCurrent = "page"
-                    +"Login"
+                    +(if (props.isLoggedIn) "Account" else "Login")
                 }
 
                 // BESTEL knop

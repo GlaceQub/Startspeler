@@ -1,4 +1,4 @@
-package com.example.server
+package startspeler.server
 
 import auth.AuthService
 import db.DatabaseFactory
@@ -14,9 +14,13 @@ import io.ktor.server.application.*
 import io.ktor.server.plugins.contentnegotiation.*
 import io.ktor.serialization.kotlinx.json.json
 import io.ktor.server.routing.*
-import com.example.server.routes.authRoutes
 import io.ktor.server.plugins.cors.routing.*
 import io.ktor.server.response.*
+import io.ktor.server.auth.*
+import io.ktor.server.auth.jwt.*
+import com.auth0.jwt.JWT
+import com.auth0.jwt.algorithms.Algorithm
+import startspeler.server.routes.authRoutes
 
 fun main() {
     //region Database setup
@@ -48,8 +52,8 @@ fun main() {
 
     fun envFromDotenv(key: String, default: String? = null): String? {
         // Dotenv.get may return Any?; coerce to String safely
-        val v = dotenv.get(key)
-        return if (v == null) default else v.toString()
+        val v = dotenv[key]
+        return v ?: default
     }
 
     /** Read MySQL variables commonly used in docker-compose .env files */
@@ -100,12 +104,36 @@ fun main() {
     println("Authentication for user 'admin' with default password: $authResult")
     //endregion
 
+    //region JWT config
+    val jwtSecret = envFromDotenv("JWT_SECRET") ?: "dev-secret-key" // Use a strong secret in production!
+    val jwtIssuer = "startspeler-app"
+    val jwtAudience = "startspeler-users"
+    val jwtRealm = "startspeler-realm"
+    val algorithm = Algorithm.HMAC256(jwtSecret)
+    //endregion
+
     //region Ktor HTTP server
     embeddedServer(Netty, port = 8080) {
         install(ContentNegotiation) { json() }
         install(CORS) {
             anyHost()
             allowHeader("Content-Type")
+            allowHeader("Authorization")
+        }
+        install(Authentication) {
+            jwt("auth-jwt") {
+                realm = jwtRealm
+                verifier(
+                    JWT
+                        .require(algorithm)
+                        .withAudience(jwtAudience)
+                        .withIssuer(jwtIssuer)
+                        .build()
+                )
+                validate { credential ->
+                    if (credential.payload.getClaim("username").asString().isNotEmpty()) JWTPrincipal(credential.payload) else null
+                }
+            }
         }
         routing {
             intercept(ApplicationCallPipeline.Call) {
@@ -122,7 +150,14 @@ fun main() {
                 call.respondText("OK")
             }
 
-            authRoutes(auth)
+            // Delegate all auth routes to routes/AuthRoutes.kt
+            authRoutes(
+                auth,
+                jwtIssuer,
+                jwtAudience,
+                jwtRealm,
+                algorithm
+            )
         }
     }.start(wait = true)
     //endregion
