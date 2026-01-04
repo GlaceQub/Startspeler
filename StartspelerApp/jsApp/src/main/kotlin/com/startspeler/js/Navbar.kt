@@ -1,0 +1,67 @@
+package com.startspeler.js
+
+import kotlinx.browser.window
+import react.FC
+import react.Props
+import mui.material.AppBar
+import mui.material.Toolbar
+import mui.material.Button
+import mui.material.ButtonVariant
+import mui.material.Typography
+import react.dom.html.ReactHTML
+import kotlin.js.json
+
+external interface NavBarProps : Props {
+    var current: String?
+}
+
+val Navbar = FC<NavBarProps> { props ->
+    val current = props.current ?: ""
+
+    AppBar {
+        asDynamic().className = "navbar"
+        elevation = 0
+        asDynamic().sx = json(
+            "backgroundColor" to "#2B3078",
+            "color" to "#ffffff"
+        )
+
+        Toolbar {
+            ReactHTML.span{
+                asDynamic().className = "logo"
+
+                ReactHTML.img {
+                    asDynamic().src = "/images/logostartspeler.png"
+                    asDynamic().alt = "Startspeler Logo"
+                }
+            }
+
+            ReactHTML.span {
+                asDynamic().className = "buttons"
+
+                // LOGIN knop
+                Button {
+                    onClick = { _ -> window.location.hash = "#/login" }
+                    variant = ButtonVariant.contained
+                    disableElevation = true
+                    val cls = if (current == "login") "nav-button active" else "nav-button"
+                    asDynamic().className = cls
+                    if (current == "login") asDynamic().ariaCurrent = "page"
+                    +"Login"
+                }
+
+                // BESTEL knop
+                Button {
+                    onClick = { _ -> window.location.hash = "#/bestel" }
+                    variant = ButtonVariant.contained
+                    disableElevation = true
+                    val cls = if (current == "bestel") "nav-button active" else "nav-button"
+                    asDynamic().className = cls
+                    if (current == "bestel") asDynamic().ariaCurrent = "page"
+                    +"Bestel"
+                }
+            }
+        }
+    }
+}
+
