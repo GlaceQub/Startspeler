@@ -4,7 +4,7 @@ This file combines the zero‑cost local POC summary with a concrete step‑by�
 
 Quick summary (one line)
 - Frontend: Kotlin/JS PWA (StartspelerApp/jsApp) — develop on `localhost`, build static bundle for Netlify.  
-- Shared: KMP shared module (StartspelerApp/shared) for models, HTTP and auth logic.  
+- Shared: KMP shared module (StartspelerApp/shared) for db.tables, HTTP and auth logic.  
 - Backend: not included yet in the scaffold — run Ktor locally (or add `StartspelerApp/backend`) and verify JWTs against Supabase.  
 - DB/Auth: Supabase (cloud free project for fastest start) or `supabase` CLI for fully local mode.
 

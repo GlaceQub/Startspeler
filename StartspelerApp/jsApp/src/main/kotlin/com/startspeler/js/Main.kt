@@ -48,22 +48,10 @@ private val App = FC<Props> {
     }
 
     when (route) {
-        "login" -> LoginPage {
-            onSignIn = { email, password ->
-                alert("Sign in clicked: email=$email, password=$password")
-            }
-            loading = false
-            error = null
-            onGoToBestel = { window.location.hash = "#/bestel" } // navigate to BestelPage
+        "login" -> LoginScreen {
+            //onGoToBestel = { window.location.hash = "#/bestel" } // navigate to BestelPage
         }
         "bestel" -> BestelPage { } // render BestelPage
-        else -> LoginPage {
-            onSignIn = { email, password ->
-                alert("Sign in clicked: email=$email, password=$password")
-            }
-            loading = false
-            error = null
-            onGoToBestel = { window.location.hash = "#/bestel" }
-        }
+        else -> LoginScreen {}
     }
 }

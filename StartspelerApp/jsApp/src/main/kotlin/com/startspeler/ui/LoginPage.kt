@@ -14,18 +14,18 @@ import web.html.password
 
 
 external interface LoginPageProps : Props {
-    var onSignIn: (email: String, password: String) -> Unit
+    var onSignIn: (username: String, password: String) -> Unit
     var loading: Boolean
     var error: String?
     var onGoToBestel: (() -> Unit)? // navigation callback
 }
 
 val LoginPage = FC<LoginPageProps> { props ->
-    var email by useState("")
+    var username by useState("")
     var password by useState("")
 
     Box {
-        sx = js("({ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', gap: 16 })")
+        sx = js("({ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', gap: 5 })")
 
         Typography {
             sx = js("({ marginBottom: 20 })")
@@ -34,11 +34,11 @@ val LoginPage = FC<LoginPageProps> { props ->
         }
 
         TextField {
-            label = ReactNode("Email")
-            value = email
-            placeholder = "email"
+            label = ReactNode("Username")
+            value = username
+            placeholder = "username"
             onChange = { event ->
-                email = event.target.asDynamic().value as String
+                username = event.target.asDynamic().value as String
             }
             fullWidth = true
             sx = js("({ width: '300px' })")
@@ -57,7 +57,7 @@ val LoginPage = FC<LoginPageProps> { props ->
 
         Button {
             variant = ButtonVariant.contained
-            onClick = { _ -> props.onSignIn(email, password) }
+            onClick = { _ -> props.onSignIn(username, password) }
             +(if (props.loading) "Signing in..." else "Sign In")
         }
 
