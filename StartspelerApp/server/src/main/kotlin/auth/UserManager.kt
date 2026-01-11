@@ -1,7 +1,8 @@
 package auth
 
+import com.startspeler.models.User
 import db.tables.Password
-import db.tables.User
+import db.tables.User as DbUser
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
@@ -13,7 +14,7 @@ class UserManager {
         fun createDefaultAdminUser() {
             val defaultAdminUsername = "admin"
             transaction {
-                val exists = User.select { User.name eq defaultAdminUsername }.count() > 0
+                val exists = DbUser.select { DbUser.name eq defaultAdminUsername }.count() > 0
                 if (!exists) {
                     val defaultAdminPassword = "St4rtsp3l3r"
                     val salt = PasswordManager.generateSalt()
@@ -34,14 +35,14 @@ class UserManager {
             statusId: Int
         ) {
             transaction {
-                val userId = User.insert {
+                val userId = DbUser.insert {
                     it[name] = username
-                    it[User.groupId] = groupId
-                    it[User.roleId] = roleId
-                    it[User.statusId] = statusId
+                    it[DbUser.groupId] = groupId
+                    it[DbUser.roleId] = roleId
+                    it[DbUser.statusId] = statusId
                     it[email] = null // or set a default email if needed
                     it[createdAt] = UtcNow()
-                } get User.id
+                } get DbUser.id
 
                 Password.insert {
                     it[Password.userId] = userId
@@ -53,22 +54,22 @@ class UserManager {
         }
 
         /** Retrieve a user by username. */
-        fun getUserByName(username: String): entities.UserEntity? {
+        fun getUserByName(username: String): User? {
             return transaction {
-                User.select { User.name eq username }
+                DbUser.select { DbUser.name eq username }
                     .singleOrNull()
                     ?.let {
-                        entities.UserEntity(
-                            id = it[User.id],
-                            name = it[User.name],
-                            email = it[User.email],
-                            groupId = it[User.groupId],
-                            roleId = it[User.roleId],
-                            statusId = it[User.statusId],
-                            createdAt = it[User.createdAt],
-                            passwordHash = Password.select { Password.userId eq it[User.id] }
+                        User(
+                            id = it[DbUser.id],
+                            name = it[DbUser.name],
+                            email = it[DbUser.email],
+                            groupId = it[DbUser.groupId],
+                            roleId = it[DbUser.roleId],
+                            statusId = it[DbUser.statusId],
+                            createdAt = it[DbUser.createdAt],
+                            passwordHash = Password.select { Password.userId eq it[DbUser.id] }
                                 .single()[Password.passwordHash],
-                            salt = Password.select { Password.userId eq it[User.id] }
+                            salt = Password.select { Password.userId eq it[DbUser.id] }
                                 .single()[Password.salt]
                         )
                     }

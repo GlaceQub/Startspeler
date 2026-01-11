@@ -1,8 +1,9 @@
-package entities
+package com.startspeler.models
 
 import kotlinx.datetime.LocalDateTime
 
-data class UserEntity(
+@kotlinx.serialization.Serializable
+data class User(
     val id: Int,
     val name: String,
     val email: String?,
@@ -13,3 +14,4 @@ data class UserEntity(
     val passwordHash: String,
     val salt: String
 )
+

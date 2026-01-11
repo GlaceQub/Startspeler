@@ -1,11 +1,13 @@
-package entities
+package com.startspeler.models
 
 import kotlinx.datetime.LocalDateTime
 
-data class PasswordEntity(
+@kotlinx.serialization.Serializable
+data class Password(
     val id: Int,
     val userId: Int,
     val passwordHash: String,
     val salt: String,
     val lastChanged: LocalDateTime?
 )
+

@@ -1,9 +1,11 @@
-package entities
+package com.startspeler.models
 
-data class ProductEntity(
+@kotlinx.serialization.Serializable
+data class Product(
     val id: Int,
     val name: String,
     val categoryId: Int,
     val price: Float,
     val popularity: Int?
 )
+

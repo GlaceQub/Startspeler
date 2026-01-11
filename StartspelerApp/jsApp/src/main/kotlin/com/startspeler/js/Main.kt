@@ -1,7 +1,5 @@
 package com.startspeler.js
 
-import com.startspeler.ui.BestelPage
-import com.startspeler.js.Navbar
 import kotlinx.browser.window
 import mui.material.CircularProgress
 import react.FC
@@ -72,8 +70,8 @@ private val App = FC<Props> {
                 this.loggedIn = loggedIn
                 this.setLoggedIn = { loggedIn = it }
             }
-            "bestel" -> BestelPage {
-                // You can pass loggedIn here if BestelPage needs it
+            "bestel" -> BestelScreen {
+                // You can pass loggedIn here if BestelScreen needs it
             }
             else -> LoginScreen {
                 this.loggedIn = loggedIn

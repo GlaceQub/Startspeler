@@ -1,11 +1,13 @@
-package entities
+package com.startspeler.models
 
 import kotlinx.datetime.LocalDateTime
 
-data class InventoryEntity(
+@kotlinx.serialization.Serializable
+data class Inventory(
     val id: Int,
     val productId: Int,
     val quantity: Int,
     val minimumQuantity: Int?,
     val lastUpdated: LocalDateTime?
 )
+

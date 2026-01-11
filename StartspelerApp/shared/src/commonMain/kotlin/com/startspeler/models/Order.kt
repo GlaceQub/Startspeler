@@ -1,8 +1,9 @@
-package entities
+package com.startspeler.models
 
 import kotlinx.datetime.LocalDateTime
 
-data class OrderEntity(
+@kotlinx.serialization.Serializable
+data class Order(
     val id: Int,
     val userId: Int,
     val tableId: Int,
@@ -13,3 +14,4 @@ data class OrderEntity(
     val isPlacedByStaff: Boolean,
     val remarks: String?
 )
+
