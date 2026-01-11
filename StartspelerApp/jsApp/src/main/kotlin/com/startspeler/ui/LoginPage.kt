@@ -26,74 +26,61 @@ external interface LoginPageProps : Props {
 }
 
 val LoginPage = FC<LoginPageProps> { props ->
-    if (props.loggedIn) {
-        Box {
-            sx = js("({ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh' })")
+    Box {
+        sx = js("({ flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', alignItems: 'center' })")
+        // Centered Card for login content
+        mui.material.Card {
+            sx = js("({px: 3,py: 2, display: 'flex', flexDirection: 'column', alignItems: 'center', boxShadow: 3, width: 300, borderRadius: 2 })")
             Typography {
-                variant = TypographyVariant.h3
-                +"Welcome! You are now logged in."
-            }
-            props.onSignOut?.let { onSignOut ->
-                Button {
-                    onClick = { onSignOut() }
-                    +"Logout"
-                }
-            }
-        }
-    } else {
-        Box {
-            sx = js("({ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100vh', gap: 5 })")
-
-            Typography {
-                sx = js("({ marginBottom: 20 })")
-                variant = TypographyVariant.h2
+                sx = js("({ marginBottom: 4 })")
+                variant = TypographyVariant.h4
                 +"Startspeler - Login"
             }
-
-            TextField {
-                label = ReactNode("Username")
-                value = props.username
-                placeholder = "username"
-                onChange = { event ->
-                    props.setUsername(event.target.asDynamic().value as String)
-                }
-                fullWidth = true
-                sx = js("({ width: '300px' })")
-            }
-
-            TextField {
-                label = ReactNode("Password")
-                value = props.password
-                onChange = { event ->
-                    props.setPassword(event.target.asDynamic().value as String)
-                }
-                type = InputType.password
-                fullWidth = true
-                sx = js("({ width: '300px' })")
-            }
-
-            Button {
-                variant = ButtonVariant.contained
-                onClick = { _ -> props.onSignIn(props.username, props.password) }
-                +(if (props.loading) "Signing in..." else "Sign In")
-            }
-
-            props.error?.let { err ->
+            if (props.loggedIn) {
                 Typography {
-                    this.asDynamic().color = "error"
-                    +(err.toString()) // Ensure error is always rendered as a string
+                    variant = TypographyVariant.h5
+                    +"Welcome! You are now logged in."
                 }
-            }
-        }
-
-        Box {
-            sx = js("({ position: 'absolute', bottom: 20, textAlign: 'center', width: '100%' })")
-
-            props.onGoToBestel?.let { goToBestel ->
+                props.onSignOut?.let { onSignOut ->
+                    Button {
+                        sx = js("({ marginTop: 4 })")
+                        onClick = { onSignOut() }
+                        +"Logout"
+                    }
+                }
+            } else {
+                TextField {
+                    label = ReactNode("Username")
+                    value = props.username
+                    placeholder = "username"
+                    onChange = { event ->
+                        props.setUsername(event.target.asDynamic().value as String)
+                    }
+                    fullWidth = true
+                    sx = js("({ marginBottom: 3 })")
+                }
+                TextField {
+                    label = ReactNode("Password")
+                    value = props.password
+                    onChange = { event ->
+                        props.setPassword(event.target.asDynamic().value as String)
+                    }
+                    type = InputType.password
+                    fullWidth = true
+                    sx = js("({ marginBottom: 2 })")
+                }
                 Button {
-                    variant = ButtonVariant.text
-                    onClick = { _ -> goToBestel() }
-                    +"Go to Bestel"
+                    variant = ButtonVariant.contained
+                    onClick = { _ -> props.onSignIn(props.username, props.password) }
+                    sx = js("({ width: '100%' })")
+                    +(if (props.loading) "Signing in..." else "Sign In")
+                }
+                props.error?.let { err ->
+                    Typography {
+                        this.asDynamic().color = "error"
+                        sx = js("({ marginTop: 6 })")
+                        +(err.toString())
+                    }
                 }
             }
         }

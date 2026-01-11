@@ -1,3 +1,10 @@
+/* Remove default body margin and padding for a flush layout */
+body {
+  margin: 0 !important;
+  padding: 0 !important;
+  box-sizing: border-box;
+}
+
 /* AppBar */
 .navbar.MuiPaper-root {
   background-color: #2B3078 !important;
@@ -6,8 +13,8 @@
 
 /* Toolbar */
 .navbar .MuiToolbar-root {
-  min-height: 150px !important;
-  height: 150px !important;
+  min-height: 60px !important;
+  height: 60px !important;
   padding-left: 28px !important;
   padding-right: 28px !important;
   position: relative !important;
@@ -24,14 +31,14 @@
 }
 
 .navbar .logo img {
-  height: 64px;
+  height: 32px;
   width: auto;
 }
 
 .navbar .logo-text {
   color: #ffffff;
   font-weight: 800;
-  font-size: 22px;
+  font-size: 16px;
   letter-spacing: 0.2px;
 }
 
@@ -56,9 +63,9 @@
   text-transform: none !important;
   font-family: "Roboto", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
   font-weight: 900 !important;
-  font-size: 35px !important;
-  padding: 28px 72px !important;
-  border-radius: 56px !important;
+  font-size: 18px !important;
+  padding: 8px 36px !important;
+  border-radius: 18px !important;
   box-shadow: none !important;
   min-width: 0 !important;
   line-height: 1 !important;

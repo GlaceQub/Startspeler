@@ -1,6 +1,5 @@
 package startspeler.server.routes
 
-import auth.AuthService
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.*
 import io.ktor.server.request.*
@@ -11,9 +10,9 @@ import io.ktor.server.auth.jwt.*
 import kotlinx.serialization.Serializable
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
+import startspeler.server.repository.AuthRepository
 
 fun Route.authRoutes(
-    auth: AuthService,
     jwtIssuer: String,
     jwtAudience: String,
     jwtRealm: String,
@@ -36,7 +35,7 @@ fun Route.authRoutes(
 
         // Wrap authentication in try/catch so we never leak a raw 500 without JSON
         try {
-            val ok = auth.authenticate(loginRequest.username, loginRequest.password)
+            val ok = AuthRepository.authenticate(loginRequest.username, loginRequest.password)
             if (ok) {
                 val token = JWT.create()
                     .withAudience(jwtAudience)
