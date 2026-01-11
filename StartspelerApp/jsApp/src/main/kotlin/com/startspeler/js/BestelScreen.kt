@@ -12,6 +12,7 @@ import kotlinx.coroutines.launch
 import react.useEffect
 import react.useEffectOnce
 import react.useState
+import kotlinx.serialization.json.Json
 
 external interface BestelScreenProps : Props
 
@@ -47,10 +48,10 @@ val BestelScreen = FC<BestelScreenProps> {
                 try {
                     val response = window.fetch(backendUrl.trimEnd('/') + "/categories")
                         .await()
-                        .json()
-                        .unsafeCast<Array<Category>>()
-                        .toList()
-                    setCategories(response)
+                        .text()
+                        .await()
+                    val categories = Json.decodeFromString<List<Category>>(response)
+                    setCategories(categories)
                 } catch (e: Throwable) {
                     setError("Failed to fetch categories: ${'$'}e")
                 }
@@ -63,12 +64,12 @@ val BestelScreen = FC<BestelScreenProps> {
         if (backendUrl != null) {
             MainScope().launch {
                 try {
-                    val response = window.fetch(backendUrl.trimEnd('/') + "/category/${'$'}{category.id}/with-stock")
+                    val response = window.fetch(backendUrl.trimEnd('/') + "/products/category/${category.id}/with-stock")
                         .await()
-                        .json()
-                        .unsafeCast<Array<ProductItem>>()
-                        .toList()
-                    setProducts(response)
+                        .text()
+                        .await()
+                    val products = Json.decodeFromString<List<ProductItem>>(response)
+                    setProducts(products)
                 } catch (e: Throwable) {
                     setError("Failed to fetch products: ${'$'}e")
                 }
@@ -89,5 +90,9 @@ val BestelScreen = FC<BestelScreenProps> {
         this.products = products
         this.selectedCategory = selectedCategory
         this.onCategoryClick = handleCategoryClick
+        this.onBackClick = {
+            setSelectedCategory(null)
+            setProducts(emptyList())
+        }
     }
 }

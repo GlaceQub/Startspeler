@@ -22,20 +22,19 @@ object ProductRepository {
 
     fun getByCategoryId(categoryId: Int): List<Product> = transaction {
         ProductTable.select { ProductTable.categoryId eq categoryId }.map {
-                Product(
-                    id = it[ProductTable.id],
-                    name = it[ProductTable.name],
-                    categoryId = it[ProductTable.categoryId],
-                    price = it[ProductTable.price],
-                    popularity = it[ProductTable.popularity]
-                )
-            }
+            Product(
+                id = it[ProductTable.id],
+                name = it[ProductTable.name],
+                categoryId = it[ProductTable.categoryId],
+                price = it[ProductTable.price],
+                popularity = it[ProductTable.popularity]
+            )
+        }
     }
 
     fun getAllByCategoryWithStock(categoryId: Int): List<ProductItem> = transaction {
-        (ProductTable leftJoin InventoryTable).select { ProductTable.categoryId eq categoryId }.groupBy(ProductTable.id)
-            .map { row ->
-                val quantity = row[InventoryTable.quantity]
+        (ProductTable innerJoin InventoryTable).select { ProductTable.categoryId eq categoryId }.map { row ->
+                val quantity = row.getOrNull(InventoryTable.quantity)
                 ProductItem(
                     id = row[ProductTable.id],
                     name = row[ProductTable.name],
@@ -47,26 +46,26 @@ object ProductRepository {
 
     fun getById(id: Int): Product? = transaction {
         ProductTable.select { ProductTable.id eq id }.map {
-                Product(
-                    id = it[ProductTable.id],
-                    name = it[ProductTable.name],
-                    categoryId = it[ProductTable.categoryId],
-                    price = it[ProductTable.price],
-                    popularity = it[ProductTable.popularity]
-                )
-            }.singleOrNull()
+            Product(
+                id = it[ProductTable.id],
+                name = it[ProductTable.name],
+                categoryId = it[ProductTable.categoryId],
+                price = it[ProductTable.price],
+                popularity = it[ProductTable.popularity]
+            )
+        }.singleOrNull()
     }
 
     fun getTopPopularity(limit: Int = 3): List<Product> = transaction {
         ProductTable.selectAll().orderBy(ProductTable.popularity, SortOrder.DESC).limit(limit).map {
-                Product(
-                    id = it[ProductTable.id],
-                    name = it[ProductTable.name],
-                    categoryId = it[ProductTable.categoryId],
-                    price = it[ProductTable.price],
-                    popularity = it[ProductTable.popularity]
-                )
-            }
+            Product(
+                id = it[ProductTable.id],
+                name = it[ProductTable.name],
+                categoryId = it[ProductTable.categoryId],
+                price = it[ProductTable.price],
+                popularity = it[ProductTable.popularity]
+            )
+        }
     }
 
     fun getTopPopularityCategory(categoryId: Int, limit: Int = 3): List<Product> = transaction {

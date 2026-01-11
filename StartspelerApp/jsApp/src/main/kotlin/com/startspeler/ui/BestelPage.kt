@@ -1,7 +1,10 @@
 package com.startspeler.ui
 
+import com.startspeler.ProductCardA
+import com.startspeler.ProductCardB
 import mui.system.Box
 import mui.material.Typography
+import mui.material.Button
 import react.FC
 import react.Props
 import kotlin.js.js
@@ -14,11 +17,11 @@ external interface BestelPageProps : Props {
     var categories: List<Category>
     var onCategoryClick: (Category) -> Unit
     var selectedCategory: Category?
+    var onBackClick: () -> Unit
 }
 
 val BestelPage = FC<BestelPageProps> { props ->
     Box {
-        // Remove margin and height restrictions if navbar is not fixed
         if (props.selectedCategory == null) {
             // Show category tiles
             if (props.categories.isEmpty()) {
@@ -35,6 +38,12 @@ val BestelPage = FC<BestelPageProps> { props ->
                 }
             }
         } else {
+            // Show back button
+            Button {
+                sx = js("""{ margin: '16px', width: 'fit-content' }""")
+                onClick = { props.onBackClick() }
+                +"Terug"
+            }
             // Show products for selected category
             if (props.products.isEmpty()) {
                 Typography { +"Geen producten gevonden voor deze categorie." }
@@ -42,8 +51,14 @@ val BestelPage = FC<BestelPageProps> { props ->
                 Box {
                     sx = js("""{ display: 'grid', gridTemplateColumns: 'repeat(4, auto)', gridAutoFlow: 'row', justifyContent: 'center', gap: '24px', padding: '24px', alignItems: 'center' }""")
                     props.products.forEach { item ->
-                        Typography {
-                            +"${'$'}{item.name} - €${'$'}{item.price}"
+                        if (item.outOfStock) {
+                            ProductCardA {
+                                this.item = item
+                            }
+                        } else {
+                            ProductCardB {
+                                this.item = item
+                            }
                         }
                     }
                 }
