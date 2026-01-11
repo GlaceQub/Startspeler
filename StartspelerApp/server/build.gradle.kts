@@ -12,6 +12,7 @@ dependencies {
     implementation("io.ktor:ktor-server-netty:2.3.4")
     implementation("io.ktor:ktor-server-core:2.3.4")
     implementation("io.ktor:ktor-server-auth:2.3.4")
+    implementation("io.ktor:ktor-server-auth-jwt:2.3.4")
     implementation("io.ktor:ktor-server-cors:2.3.4")
     implementation("io.ktor:ktor-server-content-negotiation:2.3.4")
     implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.0")
@@ -39,10 +40,13 @@ dependencies {
     implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.4.1")
 
     implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.4")
+
+    // JWT support
+    implementation("com.auth0:java-jwt:4.4.0")
 }
 
 application {
-    mainClass.set("com.example.server.ApplicationKt")
+    mainClass.set("startspeler.server.ApplicationKt")
 }
 
 kotlin {
