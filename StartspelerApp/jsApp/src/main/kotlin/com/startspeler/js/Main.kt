@@ -1,8 +1,8 @@
 package com.startspeler.js
 
 import kotlinx.browser.window
+import mui.material.Box
 import mui.material.CircularProgress
-import mui.material.Toolbar
 import react.FC
 import react.Props
 import react.create
@@ -57,30 +57,34 @@ private val App = FC<Props> {
 
     if (!authChecked) {
         div {
-            style = js("{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', width: '100vw', margin: 0, padding: 0 }")
+            style =
+                js("{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', width: '100vw', margin: 0, padding: 0 }")
             CircularProgress {}
         }
     } else {
         div {
-            style = js("{ display: 'flex', flexDirection: 'column', minHeight: '100vh', width: '100vw', margin: 0, padding: 0 }")
-            Navbar{
+            style = js("{ display: 'flex', flexDirection: 'column', minHeight: '100vh', width: '100vw', margin: 0, padding: 0, overflowX: 'hidden', boxSizing: 'border-box' }")
+            Navbar {
                 current = route
                 isLoggedIn = loggedIn
             }
-            // Toolbar spacer if needed for fixed navbar (not static)
-            // Toolbar { asDynamic().className = "navbar-spacer" }
             // Main content fills the rest
-            when (route) {
-                "login" -> LoginScreen {
-                    this.loggedIn = loggedIn
-                    this.setLoggedIn = { loggedIn = it }
-                }
-                "bestel" -> BestelScreen {
-                    // You can pass loggedIn here if BestelScreen needs it
-                }
-                else -> LoginScreen {
-                    this.loggedIn = loggedIn
-                    this.setLoggedIn = { loggedIn = it }
+            Box {
+                sx = js("{display: 'flex', flexGrow: 1, overflow: 'auto', minWidth: 0 }")
+                when (route) {
+                    "login" -> LoginScreen {
+                        this.loggedIn = loggedIn
+                        this.setLoggedIn = { loggedIn = it }
+                    }
+
+                    "bestel" -> BestelScreen {
+                        // You can pass loggedIn here if BestelScreen needs it
+                    }
+
+                    else -> LoginScreen {
+                        this.loggedIn = loggedIn
+                        this.setLoggedIn = { loggedIn = it }
+                    }
                 }
             }
         }

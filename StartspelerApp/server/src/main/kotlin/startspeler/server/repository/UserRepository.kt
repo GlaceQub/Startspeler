@@ -24,11 +24,12 @@ object UserRepository {
         }
     }
 
-    /** Create a new user with hashed password and salt. */
+    /** Create a new user with optional password and salt. */
     fun createUser(
         username: String,
-        passwordHash: String,
-        salt: String,
+        email: String? = null,
+        passwordHash: String? = null,
+        salt: String? = null,
         groupId: Int,
         roleId: Int,
         statusId: Int
@@ -39,15 +40,17 @@ object UserRepository {
                 it[DbUser.groupId] = groupId
                 it[DbUser.roleId] = roleId
                 it[DbUser.statusId] = statusId
-                it[email] = null // or set a default email if needed
+                it[DbUser.email] = email
                 it[createdAt] = UtcNow()
             } get DbUser.id
 
-            Password.insert {
-                it[Password.userId] = userId
-                it[Password.passwordHash] = passwordHash
-                it[Password.salt] = salt
-                it[Password.lastChanged] = UtcNow()
+            if (passwordHash != null && salt != null) {
+                Password.insert {
+                    it[Password.userId] = userId
+                    it[Password.passwordHash] = passwordHash
+                    it[Password.salt] = salt
+                    it[Password.lastChanged] = UtcNow()
+                }
             }
         }
     }

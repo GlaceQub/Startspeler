@@ -1,3 +1,13 @@
+@import "./categoryTile.css";
+@import "./productCard.css";
+
+/* Define Startspeler primary color variable */
+:root {
+  --startspeler-primary: #2B3078;
+  --startspeler-secondary: #d7d9f7;
+}
+
+
 /* Remove default body margin and padding for a flush layout */
 body {
   margin: 0 !important;
@@ -7,7 +17,7 @@ body {
 
 /* AppBar */
 .navbar.MuiPaper-root {
-  background-color: #2B3078 !important;
+  background-color: var(--startspeler-primary) !important;
   color: #ffffff !important;
 }
 
@@ -58,8 +68,8 @@ body {
 .navbar .nav-button.MuiButton-root,
 .navbar .nav-button.MuiButton-contained {
   background-color: #ffffff !important;
-  color: #2B3078 !important;
-  border: 2px solid #2B3078 !important;
+  color: var(--startspeler-primary) !important;
+  border: 2px solid var(--startspeler-primary) !important;
   text-transform: none !important;
   font-family: "Roboto", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif !important;
   font-weight: 900 !important;
@@ -186,3 +196,6 @@ body {
     box-sizing: border-box !important;
   }
 }
+
+
+/* Custom Button styling for other buttons in the app */

@@ -1,69 +1,66 @@
 package com.startspeler.ui
 
-import com.startspeler.ProductCardA
-import com.startspeler.ProductCardB
 import mui.system.Box
-import mui.material.Typography
-import mui.material.Button
 import react.FC
-import react.Props
-import kotlin.js.js
 import com.startspeler.dto.ProductItem
+import com.startspeler.dto.CartItem
 import com.startspeler.models.Category
-import com.startspeler.components.bestel.CategoryTile
 
-external interface BestelPageProps : Props {
+
+external interface BestelPageProps : react.Props {
     var products: List<ProductItem>
     var categories: List<Category>
     var onCategoryClick: (Category) -> Unit
     var selectedCategory: Category?
     var onBackClick: () -> Unit
+    var loading: Boolean // Add loading prop
+    var error: String? // Add error prop
+    var cartItems: List<CartItem>
+    var onAddToCart: (ProductItem) -> Unit
+    var onRemoveFromCart: (CartItem) -> Unit
+    var OnOrder: () -> Unit
+    var tafelOptions: List<String>
+    var selectedTafel: String
+    var onTafelChange: (String) -> Unit
+    var klantOptions: List<String>
+    var selectedKlant: String
+    var onKlantChange: (String) -> Unit
+    var onAddKlant: () -> Unit
 }
 
-val BestelPage = FC<BestelPageProps> { props ->
+val BestelPage = FC<BestelPageProps> { pageProps ->
+    console.log("[BestelPage] props:", pageProps)
     Box {
-        if (props.selectedCategory == null) {
-            // Show category tiles
-            if (props.categories.isEmpty()) {
-                Typography { +"Geen categorieën gevonden." }
-            } else {
-                Box {
-                    sx = js("""{ display: 'grid', gridTemplateColumns: 'repeat(4, auto)', gap: '24px', padding: '24px', justifyContent: 'center', alignItems: 'center' }""")
-                    props.categories.forEach { category ->
-                        CategoryTile {
-                            this.category = category
-                            this.onClick = props.onCategoryClick
-                        }
-                    }
-                }
-            }
-        } else {
-            // Show back button
-            Button {
-                sx = js("""{ margin: '16px', width: 'fit-content' }""")
-                onClick = { props.onBackClick() }
-                +"Terug"
-            }
-            // Show products for selected category
-            if (props.products.isEmpty()) {
-                Typography { +"Geen producten gevonden voor deze categorie." }
-            } else {
-                Box {
-                    sx = js("""{ display: 'grid', gridTemplateColumns: 'repeat(4, auto)', gridAutoFlow: 'row', justifyContent: 'center', gap: '24px', padding: '24px', alignItems: 'center' }""")
-                    props.products.forEach { item ->
-                        if (item.outOfStock) {
-                            ProductCardA {
-                                this.item = item
-                            }
-                        } else {
-                            ProductCardB {
-                                this.item = item
-                            }
-                        }
-                    }
-                }
+        sx = js("{ display: 'flex', flexDirection: 'row', width: '100%', minHeight: '80vh', boxSizing: 'border-box', overflowX: 'hidden' }")
+        Box {
+            sx = js("{ flex: '0 0 70%', paddingRight: '24px', boxSizing: 'border-box', minWidth: 0 }")
+            Menu {
+                products = pageProps.products
+                categories = pageProps.categories
+                selectedCategory = pageProps.selectedCategory
+                onCategoryClick = pageProps.onCategoryClick
+                onBackClick = pageProps.onBackClick
+                onAddToCart = pageProps.onAddToCart
+                loading = pageProps.loading
+                error = pageProps.error
             }
         }
-
+        Box {
+            sx = js("{ flex: '0 0 30%', paddingLeft: '24px', boxSizing: 'border-box', minWidth: 0 }")
+            console.log("[BestelPage] cartItems:", pageProps.cartItems)
+            Cart {
+                this.cartItems = pageProps.cartItems
+                this.onRemove = pageProps.onRemoveFromCart
+                this.onOrder = pageProps.OnOrder
+                this.tafelOptions = pageProps.tafelOptions
+                this.selectedTafel = pageProps.selectedTafel
+                this.onTafelChange = pageProps.onTafelChange
+                this.klantOptions = pageProps.klantOptions
+                this.selectedKlant = pageProps.selectedKlant
+                this.onKlantChange = pageProps.onKlantChange
+                this.onAddKlant = pageProps.onAddKlant
+            }
+        }
     }
+
 }
