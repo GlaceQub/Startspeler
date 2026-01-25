@@ -1,6 +1,7 @@
 package com.startspeler.js
 
 import com.startspeler.ui.BestelPage
+import com.startspeler.ui.UserCreateScreen
 import com.startspeler.js.Navbar
 import kotlinx.browser.window
 import mui.material.CircularProgress
@@ -74,6 +75,9 @@ private val App = FC<Props> {
             }
             "bestel" -> BestelPage {
                 // You can pass loggedIn here if BestelPage needs it
+            }
+            "usercreate" -> UserCreateScreen {
+
             }
             else -> LoginScreen {
                 this.loggedIn = loggedIn

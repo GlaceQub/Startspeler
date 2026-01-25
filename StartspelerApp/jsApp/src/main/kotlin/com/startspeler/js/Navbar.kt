@@ -62,6 +62,16 @@ val Navbar = FC<NavBarProps> { props ->
                     if (current == "bestel") asDynamic().ariaCurrent = "page"
                     +"Bestel"
                 }
+
+                Button {
+                    onClick = { _ -> window.location.hash = "#/usercreate" }
+                    variant = ButtonVariant.contained
+                    disableElevation = true
+                    val cls = if (current == "usercreate") "nav-button active" else "nav-button"
+                    asDynamic().className = cls
+                    if (current == "usercreate") asDynamic().ariaCurrent = "page"
+                    +"Klant aanmaken"
+                }
             }
         }
     }
