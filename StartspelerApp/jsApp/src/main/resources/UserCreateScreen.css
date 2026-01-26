@@ -1,0 +1,115 @@
+/* UserCreateScreen CSS */
+
+/* Layout */
+.usercreate-screen {
+  font-family: "Roboto", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-weight: 400;
+  box-sizing: border-box;
+}
+
+/* Form Container */
+.usercreate-screen .user-form-container {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: calc(100vh - 150px);
+  padding: 32px;
+  box-sizing: border-box;
+}
+
+/* Form */
+.usercreate-screen .user-form {
+  width: 100%;
+  max-width: 720px;
+  background: #ffffff;
+  padding: 32px;
+  border-radius: 16px;
+  box-shadow: 0 8px 30px rgba(43,48,120,0.08);
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Rows & Inputs */
+.usercreate-screen .form-row {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.usercreate-screen .user-input {
+  width: 100%;
+  padding: 14px 16px;
+  font-size: 18px;
+  border-radius: 10px;
+  border: 1px solid #e6eaf6;
+  outline: none;
+  transition: border-color .12s ease, box-shadow .12s ease;
+  font-family: inherit;
+  font-weight: 900;
+  line-height: 1.2;
+  box-sizing: border-box;
+}
+
+.usercreate-screen .user-input::placeholder {
+  font-family: inherit;
+  font-weight: 900;
+  color: #9aa3c7;
+}
+
+/* Input Focus */
+.usercreate-screen .user-input:focus {
+  border-color: #2B3078;
+  box-shadow: 0 4px 18px rgba(43,48,120,0.08);
+}
+
+/* Submit Button */
+.usercreate-screen .user-submit {
+  align-self: flex-start;
+  background-color: #ffffff;
+  color: #2B3078;
+  border: 2px solid #2B3078;
+  padding: 12px 28px;
+  border-radius: 28px;
+  font-weight: 900;
+  font-size: 18px;
+  cursor: pointer;
+  text-transform: none;
+  box-shadow: none;
+  font-family: inherit;
+}
+
+.usercreate-screen .user-submit:hover {
+  background-color: #f3f8ff;
+  border-color: #22356a;
+}
+
+.usercreate-screen .user-submit[disabled] {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+/* Feedback */
+.usercreate-screen .feedback {
+  margin-top: 6px;
+  font-size: 15px;
+}
+.usercreate-screen .feedback.error { color: #b00020; }
+.usercreate-screen .feedback.success { color: #136f63; }
+
+/* Responsiveness */
+@media (max-width: 700px) {
+  .usercreate-screen .user-form {
+    padding: 20px;
+    max-width: 100%;
+  }
+  .usercreate-screen .user-submit {
+    padding: 10px 18px;
+    font-size: 16px;
+  }
+  .usercreate-screen .user-form-container {
+    padding: 16px;
+    min-height: calc(100vh - 120px);
+  }
+}

@@ -6,6 +6,10 @@ import db.tables.User as DbUser
 import org.jetbrains.exposed.sql.insert
 import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.dao.id.EntityID
+import utils.UtcNow
+import auth.PasswordManager
 import utils.UtcNow
 import auth.PasswordManager
 object UserRepository {
@@ -18,6 +22,23 @@ object UserRepository {
                 val defaultAdminPassword = "St4rtsp3l3r"
                 val salt = PasswordManager.generateSalt()
                 val passwordHash = PasswordManager.hashPasswordWithSalt(defaultAdminPassword, salt)
+                createUser(
+                    username = defaultAdminUsername,
+                    email = null,
+                    passwordHash = passwordHash,
+                    salt = salt,
+                    groupId = 1,
+                    roleId = 1,
+                    statusId = 1
+                )
+            }
+        }
+    }
+
+    /**
+     * Create a new user with optional password and salt.
+     * Returns newly inserted user id as Int.
+     */
                 // Use default groupId, roleId, statusId = 1
                 createUser(defaultAdminUsername, passwordHash, salt, groupId = 1, roleId = 1, statusId = 1)
             }
@@ -33,6 +54,10 @@ object UserRepository {
         groupId: Int,
         roleId: Int,
         statusId: Int
+    ): Int {
+        return transaction {
+            val insertedIdAny = DbUser.insert {
+                it[DbUser.name] = username
     ) {
         transaction {
             val userId = DbUser.insert {
@@ -41,6 +66,17 @@ object UserRepository {
                 it[DbUser.roleId] = roleId
                 it[DbUser.statusId] = statusId
                 it[DbUser.email] = email
+                it[DbUser.createdAt] = UtcNow()
+            } get DbUser.id
+
+            // insertedIdAny kan Int of EntityID<Int> zijn; behandel beide zonder dynamic
+            val userId = when (insertedIdAny) {
+                is Int -> insertedIdAny
+                is EntityID<*> -> (insertedIdAny.value as? Int)
+                    ?: throw IllegalStateException("Inserted id EntityID.value is not Int")
+                else -> throw IllegalStateException("Unexpected inserted id type: ${insertedIdAny?.javaClass}")
+            }
+
                 it[createdAt] = UtcNow()
             } get DbUser.id
 
@@ -52,29 +88,44 @@ object UserRepository {
                     it[Password.lastChanged] = UtcNow()
                 }
             }
+
+            userId
         }
     }
 
-    /** Retrieve a user by username. */
-    fun getUserByName(username: String): User? {
+    /** Retrieve a user by username. Returns null if not found. */
+    fun getUserByName(username: String): UserModel? {
         return transaction {
             DbUser.select { DbUser.name eq username }
                 .singleOrNull()
-                ?.let {
-                    User(
-                        id = it[DbUser.id],
-                        name = it[DbUser.name],
-                        email = it[DbUser.email],
-                        groupId = it[DbUser.groupId],
-                        roleId = it[DbUser.roleId],
-                        statusId = it[DbUser.statusId],
-                        createdAt = it[DbUser.createdAt],
-                        passwordHash = Password.select { Password.userId eq it[DbUser.id] }
-                            .single()[Password.passwordHash],
-                        salt = Password.select { Password.userId eq it[DbUser.id] }
-                            .single()[Password.salt]
+                ?.let { row ->
+                    // password row kan ontbreken
+                    val pwRow = Password.select { Password.userId eq row[DbUser.id] }.singleOrNull()
+                    val pwHash = pwRow?.get(Password.passwordHash)
+                    val salt = pwRow?.get(Password.salt)
+
+                    // convert createdAt (LocalDateTime or similar) to String
+                    val createdAtValue = row[DbUser.createdAt].toString()
+
+                    UserModel(
+                        id = row[DbUser.id],
+                        name = row[DbUser.name],
+                        email = row[DbUser.email],
+                        groupId = row[DbUser.groupId],
+                        roleId = row[DbUser.roleId],
+                        statusId = row[DbUser.statusId],
+                        createdAt = createdAtValue,
+                        passwordHash = pwHash,
+                        salt = salt
                     )
                 }
+        }
+    }
+
+    /** Check if a username exists. */
+    fun userExists(username: String): Boolean {
+        return transaction {
+            DbUser.select { DbUser.name eq username }.count() > 0
         }
     }
 }

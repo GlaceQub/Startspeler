@@ -19,6 +19,7 @@ import io.ktor.server.auth.jwt.*
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
 import startspeler.server.routes.authRoutes
+import startspeler.server.routes.registerUserRoutes
 import startspeler.server.routes.categoryRoutes
 import startspeler.server.routes.productRoutes
 import startspeler.server.routes.orderRoutes
@@ -146,6 +147,7 @@ fun main() {
                 call.respondText("OK")
             }
 
+            registerUserRoutes()
             // Delegate all auth routes to routes/AuthRoutes.kt
             authRoutes(
                 jwtIssuer,
