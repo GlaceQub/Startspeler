@@ -21,6 +21,9 @@ import com.auth0.jwt.algorithms.Algorithm
 import startspeler.server.routes.authRoutes
 import startspeler.server.routes.categoryRoutes
 import startspeler.server.routes.productRoutes
+import startspeler.server.routes.orderRoutes
+import startspeler.server.routes.klantenRoutes
+import startspeler.server.routes.tafelRoutes
 import startspeler.server.repository.UserRepository
 
 fun main() {
@@ -154,6 +157,11 @@ fun main() {
             categoryRoutes()
             // Register product routes
             productRoutes()
+            // Register order routes
+            orderRoutes()
+            // Register klanten and tafels routes
+            klantenRoutes()
+            tafelRoutes()
         }
     }.start(wait = true)
     //endregion

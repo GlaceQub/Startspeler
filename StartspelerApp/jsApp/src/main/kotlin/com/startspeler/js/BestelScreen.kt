@@ -35,11 +35,11 @@ val BestelScreen = FC<BestelScreenProps> {
     val (orderSnackbarOpen, setOrderSnackbarOpen) = useState(false)
 
     // Tafel and Klant state and logic
-    val tafelOptions = listOf("Tafel 1", "Tafel 2", "Tafel 3") // Replace with API data if needed
-    val (selectedTafel, setSelectedTafel) = useState(tafelOptions.first())
-    val klantOptions = useState(listOf("Jan", "Piet", "Klaas")) // Replace with API data if needed
+    val (tafelOptions, setTafelOptions) = useState<List<String>>(emptyList())
+    val (selectedTafel, setSelectedTafel) = useState("")
+    val klantOptions = useState<List<String>>(emptyList())
     val (klanten, setKlanten) = klantOptions
-    val (selectedKlant, setSelectedKlant) = useState(klanten.first())
+    val (selectedKlant, setSelectedKlant) = useState("")
     val (addKlantModalOpen, setAddKlantModalOpen) = useState(false)
 
     val handleTafelChange: (String) -> Unit = { setSelectedTafel(it) }
@@ -116,6 +116,40 @@ val BestelScreen = FC<BestelScreenProps> {
         }
     }
 
+    // Fetch klanten and tafels from backend
+    useEffect(dependencies = arrayOf(backendUrl)) {
+        if (backendUrl != null) {
+            // Fetch klanten
+            MainScope().launch {
+                try {
+                    val response = window.fetch(backendUrl.trimEnd('/') + "/klanten").await().text().await()
+                    val klantenList = Json.decodeFromString<List<String>>(response)
+                    setKlanten(klantenList)
+                    setSelectedKlant("")
+                    if (klantenList.isNotEmpty()) {
+                        setSelectedKlant(klantenList.first())
+                    }
+                } catch (e: Throwable) {
+                    setError("Fout bij het ophalen van de klanten: ${'$'}e")
+                }
+            }
+            // Fetch tafels
+            MainScope().launch {
+                try {
+                    val response = window.fetch(backendUrl.trimEnd('/') + "/tafels").await().text().await()
+                    val tafelList = Json.decodeFromString<List<String>>(response)
+                    setTafelOptions(tafelList)
+                    setSelectedTafel("")
+                    if (tafelList.isNotEmpty()) {
+                        setSelectedTafel(tafelList.first())
+                    }
+                } catch (e: Throwable) {
+                    setError("Fout bij het ophalen van de tafels: ${'$'}e")
+                }
+            }
+        }
+    }
+
     val handleCategoryClick: (Category) -> Unit = { category ->
         setSelectedCategory(category)
         if (backendUrl != null) {
@@ -154,10 +188,33 @@ val BestelScreen = FC<BestelScreenProps> {
         }
     }
     val handleOrder: () -> Unit = {
-        // Send API request to place order here (not implemented)
-        // After successful order:
-        setCartItems(emptyList())
-        setOrderSnackbarOpen(true)
+        console.log("Placing order with items:", cartItems)
+        if (backendUrl == null) {
+            setError("Backend URL niet geladen")
+        } else if (cartItems.isEmpty()) {
+            setError("Geen producten in de bestelling")
+        } else {
+            val orderData = js("{}")
+            orderData.klant = selectedKlant
+            orderData.tafel = selectedTafel
+            orderData.items = cartItems.map { item ->
+                js("{ productId: item.product_1.id_1, quantity: item.quantity_1, price: item.product_1.price_1 }")
+            }.toTypedArray()
+            MainScope().launch {
+                try {
+                    val requestInit = js("{ method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(orderData) }")
+                    val response = window.fetch(backendUrl.trimEnd('/') + "/order/add", requestInit).await()
+                    if (response.ok) {
+                        setCartItems(emptyList())
+                        setOrderSnackbarOpen(true)
+                    } else {
+                        setError("Bestelling plaatsen mislukt: "+response.status+" "+response.statusText)
+                    }
+                } catch (e: Throwable) {
+                    setError("Bestelling plaatsen mislukt: ${'$'}e")
+                }
+            }
+        }
     }
 
     // Always render BestelPage, pass error to Menu
