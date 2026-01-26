@@ -1,15 +1,23 @@
-/* UserCreateScreen-specific styles; scoped with .usercreate-screen */
+/* UserCreateScreen CSS */
 
-/* UserForm - extra styling en centrering */
+/* Layout */
+.usercreate-screen {
+  font-family: "Roboto", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-weight: 400;
+  box-sizing: border-box;
+}
+
+/* Form Container */
 .usercreate-screen .user-form-container {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-height: calc(100vh - 150px); /* past bij je toolbar hoogte */
+  min-height: calc(100vh - 150px);
   padding: 32px;
   box-sizing: border-box;
 }
 
+/* Form */
 .usercreate-screen .user-form {
   width: 100%;
   max-width: 720px;
@@ -23,7 +31,7 @@
   gap: 16px;
 }
 
-/* Rijen en inputs */
+/* Rows & Inputs */
 .usercreate-screen .form-row {
   display: flex;
   flex-direction: column;
@@ -38,15 +46,25 @@
   border: 1px solid #e6eaf6;
   outline: none;
   transition: border-color .12s ease, box-shadow .12s ease;
-  font-family: "Roboto", system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  font-family: inherit;
+  font-weight: 900;
+  line-height: 1.2;
+  box-sizing: border-box;
 }
 
+.usercreate-screen .user-input::placeholder {
+  font-family: inherit;
+  font-weight: 900;
+  color: #9aa3c7;
+}
+
+/* Input Focus */
 .usercreate-screen .user-input:focus {
   border-color: #2B3078;
   box-shadow: 0 4px 18px rgba(43,48,120,0.08);
 }
 
-/* Submit knop */
+/* Submit Button */
 .usercreate-screen .user-submit {
   align-self: flex-start;
   background-color: #ffffff;
@@ -59,6 +77,7 @@
   cursor: pointer;
   text-transform: none;
   box-shadow: none;
+  font-family: inherit;
 }
 
 .usercreate-screen .user-submit:hover {

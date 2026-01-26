@@ -8,6 +8,8 @@ import react.dom.html.ReactHTML.div
 val UserCreateScreen = FC<Props> {
     div {
         asDynamic().className = "usercreate-screen"
-        UserForm {}
+        UserForm {
+            baseUrl = "http://localhost:8080"
+        }
     }
 }

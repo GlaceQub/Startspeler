@@ -1,7 +1,6 @@
 package startspeler.server.routes
 
 import startspeler.server.repository.UserRepository
-import auth.PasswordManager
 import io.ktor.http.*
 import io.ktor.server.application.*
 import io.ktor.server.request.*
@@ -25,17 +24,16 @@ fun Route.registerUserRoutes() {
                 return@post
             }
 
-            // voorkom dubbele usernames
             if (UserRepository.userExists(req.username)) {
                 call.respond(HttpStatusCode.Conflict, mapOf("error" to "username already exists"))
                 return@post
             }
 
-            try {
+            val newId = try {
                 if (!req.password.isNullOrBlank()) {
-                    // hash & salt het wachtwoord en sla op via repository
-                    val salt = PasswordManager.generateSalt()
-                    val hash = PasswordManager.hashPasswordWithSalt(req.password, salt)
+                    // Hash & salt the password then create user and get id
+                    val salt = auth.PasswordManager.generateSalt()
+                    val hash = auth.PasswordManager.hashPasswordWithSalt(req.password, salt)
 
                     UserRepository.createUser(
                         username = req.username,
@@ -46,17 +44,8 @@ fun Route.registerUserRoutes() {
                         roleId = 2,
                         statusId = 1
                     )
-
-                    // Omdat we een password hebben toegevoegd, kan getUserByName veilig de Password-rij verwachten
-                    val created = UserRepository.getUserByName(req.username)
-                    if (created != null) {
-                        call.respond(HttpStatusCode.Created, CreateUserResponse(id = created.id))
-                    } else {
-                        // fallback, verwacht niet vaak voor te komen
-                        call.respond(HttpStatusCode.Created, mapOf("message" to "user created"))
-                    }
                 } else {
-                    // Geen wachtwoord: maak gebruiker zonder password-rij
+                    // create without password
                     UserRepository.createUser(
                         username = req.username,
                         email = req.email,
@@ -66,16 +55,14 @@ fun Route.registerUserRoutes() {
                         roleId = 2,
                         statusId = 1
                     )
-
-                    // createUser geeft geen id terug en getUserByName zou falen omdat er geen password-rij is,
-                    // daarom sturen we een eenvoudige bevestiging terug.
-                    call.respond(HttpStatusCode.Created, mapOf("message" to "user created"))
                 }
             } catch (e: Exception) {
-                // log en retourneer 500
                 call.application.environment.log.error("Failed to create user", e)
                 call.respond(HttpStatusCode.InternalServerError, mapOf("error" to "could not create user"))
+                return@post
             }
+
+            call.respond(HttpStatusCode.Created, CreateUserResponse(id = newId))
         }
     }
 }
