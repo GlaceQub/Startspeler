@@ -106,7 +106,8 @@ INSERT INTO
 VALUES ('actief'),
     ('inactief'),
     ('in behandeling'),
-    ('betaald');
+    ('betaald'),
+    ('aangemaakt');
 
 INSERT INTO
     `Role` (`name`)

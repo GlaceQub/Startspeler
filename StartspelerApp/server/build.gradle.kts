@@ -43,6 +43,8 @@ dependencies {
 
     // JWT support
     implementation("com.auth0:java-jwt:4.4.0")
+
+    implementation(project(":shared"))
 }
 
 application {

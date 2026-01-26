@@ -1,0 +1,27 @@
+/* ProductCard button styles */
+.productCard {
+    background-color: var(--startspeler-primary) !important;
+    border-radius: 20px !important;
+    box-shadow: 0 2px 8px var(--startspeler-primary) !important;
+    padding: 0 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    position: relative !important;
+    transition: opacity 0.15s, background-color 0.15s !important;
+}
+.productCard:hover,
+.productCard:focus {
+    background-color: var(--startspeler-primary) !important;
+    opacity: 0.85 !important;
+}
+.productCard:active {
+    background-color: var(--startspeler-primary) !important;
+    opacity: 1 !important;
+}
+.productCard.Mui-disabled {
+    background-color: var(--startspeler-primary) !important;
+    cursor: not-allowed !important;
+    opacity: 0.5 !important;
+}
