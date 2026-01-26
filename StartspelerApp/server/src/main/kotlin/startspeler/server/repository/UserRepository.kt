@@ -1,5 +1,6 @@
 package startspeler.server.repository
 
+import com.startspeler.models.User
 import db.tables.Password
 import db.tables.User as DbUser
 import org.jetbrains.exposed.sql.insert
@@ -9,22 +10,8 @@ import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.dao.id.EntityID
 import utils.UtcNow
 import auth.PasswordManager
-
-/**
- * Eenvoudige server-side model voor gebruikers die door repository wordt geretourneerd.
- */
-data class UserModel(
-    val id: Int,
-    val name: String,
-    val email: String?,
-    val groupId: Int,
-    val roleId: Int,
-    val statusId: Int,
-    val createdAt: String,
-    val passwordHash: String?,
-    val salt: String?
-)
-
+import utils.UtcNow
+import auth.PasswordManager
 object UserRepository {
     /** Create a default Admin user if none exists. */
     fun createDefaultAdminUser() {
@@ -52,6 +39,13 @@ object UserRepository {
      * Create a new user with optional password and salt.
      * Returns newly inserted user id as Int.
      */
+                // Use default groupId, roleId, statusId = 1
+                createUser(defaultAdminUsername, passwordHash, salt, groupId = 1, roleId = 1, statusId = 1)
+            }
+        }
+    }
+
+    /** Create a new user with optional password and salt. */
     fun createUser(
         username: String,
         email: String? = null,
@@ -64,6 +58,10 @@ object UserRepository {
         return transaction {
             val insertedIdAny = DbUser.insert {
                 it[DbUser.name] = username
+    ) {
+        transaction {
+            val userId = DbUser.insert {
+                it[name] = username
                 it[DbUser.groupId] = groupId
                 it[DbUser.roleId] = roleId
                 it[DbUser.statusId] = statusId
@@ -78,6 +76,9 @@ object UserRepository {
                     ?: throw IllegalStateException("Inserted id EntityID.value is not Int")
                 else -> throw IllegalStateException("Unexpected inserted id type: ${insertedIdAny?.javaClass}")
             }
+
+                it[createdAt] = UtcNow()
+            } get DbUser.id
 
             if (passwordHash != null && salt != null) {
                 Password.insert {

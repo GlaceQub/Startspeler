@@ -4,6 +4,7 @@ plugins {
 }
 
 kotlin {
+    jvm() // <-- Add JVM target for server compatibility
     js(IR) {
         browser()
         binaries.executable()
@@ -22,6 +23,11 @@ kotlin {
         val jsMain by getting {
             dependencies {
                 implementation("io.ktor:ktor-client-js:${property("ktor.version")}")
+            }
+        }
+        val jvmMain by getting {
+            dependencies {
+                // JVM-specific dependencies can be added here if needed
             }
         }
     }

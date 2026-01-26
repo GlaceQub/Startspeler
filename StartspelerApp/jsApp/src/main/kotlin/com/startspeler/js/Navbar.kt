@@ -7,7 +7,6 @@ import mui.material.AppBar
 import mui.material.Toolbar
 import mui.material.Button
 import mui.material.ButtonVariant
-import mui.material.Typography
 import react.dom.html.ReactHTML
 import kotlin.js.json
 
@@ -21,6 +20,7 @@ val Navbar = FC<NavBarProps> { props ->
     val isLoggedIn = props.isLoggedIn
 
     AppBar {
+        position = mui.material.AppBarPosition.static
         asDynamic().className = "navbar"
         elevation = 0
         asDynamic().sx = json(
@@ -48,8 +48,8 @@ val Navbar = FC<NavBarProps> { props ->
                     disableElevation = true
                     val cls = if (current == "login") "nav-button active" else "nav-button"
                     asDynamic().className = cls
-                    if (current == "login") asDynamic().ariaCurrent = "page"
-                    +(if (props.isLoggedIn) "Account" else "Login")
+                    if (current == "login") asDynamic()["aria-current"] = "page"
+                    +(if (isLoggedIn) "account" else "Login")
                 }
 
                 // BESTEL knop
@@ -59,7 +59,7 @@ val Navbar = FC<NavBarProps> { props ->
                     disableElevation = true
                     val cls = if (current == "bestel") "nav-button active" else "nav-button"
                     asDynamic().className = cls
-                    if (current == "bestel") asDynamic().ariaCurrent = "page"
+                    if (current == "bestel") asDynamic()["aria-current"] = "page" // Use correct ARIA attribute
                     +"Bestel"
                 }
 
@@ -76,4 +76,3 @@ val Navbar = FC<NavBarProps> { props ->
         }
     }
 }
-
