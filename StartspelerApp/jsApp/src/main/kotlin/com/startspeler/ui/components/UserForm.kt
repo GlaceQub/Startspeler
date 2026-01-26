@@ -7,19 +7,21 @@ import kotlinx.serialization.json.Json
 import kotlin.js.json
 import react.FC
 import react.Props
-import react.dom.html.ReactHTML.div
-import react.dom.html.ReactHTML.form
-import react.dom.html.ReactHTML.label
-import react.dom.html.ReactHTML.input
-import react.dom.html.ReactHTML.button
 import react.useEffect
 import react.useState
 import org.w3c.dom.HTMLInputElement
 import org.w3c.fetch.Response
 import kotlin.js.Promise
+import mui.material.Box
+import mui.material.Button
+import mui.material.CircularProgress
+import mui.material.TextField
+import mui.material.Typography
+import mui.material.Alert
+import mui.material.Stack
 
 @Serializable
-data class CreateUserRequest(val username: String, val email: String? = null, val password: String? = null)
+data class CreateUserRequest(val username: String, val email: String? = null)
 
 @Serializable
 data class CreateUserResponse(val id: Int)
@@ -39,11 +41,13 @@ val UserForm = FC<UserFormProps> { props ->
 
     useEffect(username) { setMessage(null); setIsError(false) }
 
-    div {
+    Box {
         asDynamic().className = "user-form-container"
-        form {
+
+        Box {
+            asDynamic().component = "form"
             asDynamic().className = "user-form"
-            onSubmit = { ev ->
+            asDynamic().onSubmit = { ev: dynamic ->
                 ev.preventDefault()
                 setMessage(null)
                 setIsError(false)
@@ -116,47 +120,64 @@ val UserForm = FC<UserFormProps> { props ->
                 }
             }
 
-            label {
-                asDynamic().className = "form-row"
-                +"Username:"
-                input {
-                    asDynamic().className = "user-input"
-                    name = "username"
-                    value = username
-                    onChange = { e ->
-                        val target = e.target as? HTMLInputElement
-                        setUsername(target?.value ?: "")
+            Stack {
+                asDynamic().spacing = 2
+                asDynamic().width = "100%"
+
+                Typography {
+                    asDynamic().variant = "h5"
+                    +"Maak nieuwe gebruiker"
+                }
+
+                TextField {
+                    asDynamic().label = "Username"
+                    asDynamic().variant = "outlined"
+                    asDynamic().fullWidth = true
+                    asDynamic().value = username
+                    asDynamic().onChange = { e: dynamic ->
+                        val v = (e.target as? HTMLInputElement)?.value ?: ""
+                        setUsername(v)
                     }
                 }
-            }
 
-            label {
-                asDynamic().className = "form-row"
-                +"Email (optioneel):"
-                input {
-                    asDynamic().className = "user-input"
-                    name = "email"
+                TextField {
+                    asDynamic().label = "Email (optioneel)"
+                    asDynamic().variant = "outlined"
                     asDynamic().type = "email"
-                    value = email
-                    onChange = { e ->
-                        val target = e.target as? HTMLInputElement
-                        setEmail(target?.value ?: "")
+                    asDynamic().fullWidth = true
+                    asDynamic().value = email
+                    asDynamic().onChange = { e: dynamic ->
+                        val v = (e.target as? HTMLInputElement)?.value ?: ""
+                        setEmail(v)
                     }
                 }
-            }
 
-            button {
-                asDynamic().className = "user-submit"
-                asDynamic().type = "submit"
-                asDynamic().disabled = loading
-                if (loading) +"Aanmaken..."
-                else +"Maak gebruiker"
-            }
+                if (message != null) {
+                    Alert {
+                        asDynamic().severity = if (isError) "error" else "success"
+                        +message!!
+                    }
+                }
 
-            message?.let {
-                div {
-                    asDynamic().className = if (isError) "feedback error" else "feedback success"
-                    +it
+                Box {
+                    asDynamic().display = "flex"
+                    asDynamic().alignItems = "center"
+                    asDynamic().gap = "12px"
+
+                    Button {
+                        asDynamic().variant = "contained"
+                        asDynamic().color = "primary"
+                        asDynamic().type = "submit"
+                        asDynamic().disabled = loading
+                        if (loading) {
+                            CircularProgress {
+                                asDynamic().size = 20
+                                asDynamic().color = "inherit"
+                            }
+                        } else {
+                            +"Maak gebruiker"
+                        }
+                    }
                 }
             }
         }
