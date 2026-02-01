@@ -26,6 +26,7 @@ import startspeler.server.routes.orderRoutes
 import startspeler.server.routes.klantenRoutes
 import startspeler.server.routes.tafelRoutes
 import startspeler.server.repository.UserRepository
+import startspeler.server.routes.groepRoutes
 
 fun main() {
     //region Database setup
@@ -164,6 +165,7 @@ fun main() {
             // Register klanten and tafels routes
             klantenRoutes()
             tafelRoutes()
+            groepRoutes()
         }
     }.start(wait = true)
     //endregion
