@@ -1,8 +1,10 @@
 package com.startspeler.js
 
 import com.startspeler.ui.BestelPage
+import com.startspeler.ui.UserCreateScreen
 import com.startspeler.js.Navbar
 import kotlinx.browser.window
+import mui.material.Box
 import mui.material.CircularProgress
 import react.FC
 import react.Props
@@ -58,26 +60,39 @@ private val App = FC<Props> {
 
     if (!authChecked) {
         div {
-            style = js("{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh' }")
+            style =
+                js("{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '100vh', width: '100vw', margin: 0, padding: 0 }")
             CircularProgress {}
         }
     } else {
-        Navbar{
-            current = route
-            isLoggedIn = loggedIn
-        }
+        div {
+            style = js("{ display: 'flex', flexDirection: 'column', minHeight: '100vh', width: '100vw', margin: 0, padding: 0, overflowX: 'hidden', boxSizing: 'border-box' }")
+            Navbar {
+                current = route
+                isLoggedIn = loggedIn
+            }
+            // Main content fills the rest
+            Box {
+                sx = js("{display: 'flex', flexGrow: 1, overflow: 'auto', minWidth: 0 }")
+                when (route) {
+                    "login" -> LoginScreen {
+                        this.loggedIn = loggedIn
+                        this.setLoggedIn = { loggedIn = it }
+                    }
 
-        when (route) {
-            "login" -> LoginScreen {
-                this.loggedIn = loggedIn
-                this.setLoggedIn = { loggedIn = it }
+                    "bestel" -> BestelScreen {
+                        // You can pass loggedIn here if BestelScreen needs it
+                    }
+                    
+                    "usercreate" -> UserCreateScreen {
+
             }
-            "bestel" -> BestelPage {
-                // You can pass loggedIn here if BestelPage needs it
-            }
-            else -> LoginScreen {
-                this.loggedIn = loggedIn
-                this.setLoggedIn = { loggedIn = it }
+
+                    else -> LoginScreen {
+                        this.loggedIn = loggedIn
+                        this.setLoggedIn = { loggedIn = it }
+                    }
+                }
             }
         }
     }

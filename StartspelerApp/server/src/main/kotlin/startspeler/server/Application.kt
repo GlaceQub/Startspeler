@@ -1,13 +1,11 @@
 package startspeler.server
 
-import auth.AuthService
 import db.DatabaseFactory
 import io.github.cdimascio.dotenv.Dotenv
 import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.transactions.transaction
 import java.io.File
 import db.tables.User
-import auth.UserManager
 import io.ktor.server.engine.embeddedServer
 import io.ktor.server.netty.Netty
 import io.ktor.server.application.*
@@ -21,6 +19,13 @@ import io.ktor.server.auth.jwt.*
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
 import startspeler.server.routes.authRoutes
+import startspeler.server.routes.registerUserRoutes
+import startspeler.server.routes.categoryRoutes
+import startspeler.server.routes.productRoutes
+import startspeler.server.routes.orderRoutes
+import startspeler.server.routes.klantenRoutes
+import startspeler.server.routes.tafelRoutes
+import startspeler.server.repository.UserRepository
 
 fun main() {
     //region Database setup
@@ -90,18 +95,10 @@ fun main() {
     //endregion
 
     //region Authentication
-    val auth = AuthService()
-
-    /** Check if default user exists or is created */
-    UserManager.createDefaultAdminUser()
-
-    // Check if admin user exists after creation
-    val adminUser = UserManager.getUserByName("admin")
+    // Ensure default admin user exists (moved from previous AuthService logic)
+    UserRepository.createDefaultAdminUser()
+    val adminUser = UserRepository.getUserByName("admin")
     println("Admin user exists: ${adminUser != null}")
-
-    // Try authenticating the admin user
-    val authResult = auth.authenticate("admin", "St4rtsp3l3r")
-    println("Authentication for user 'admin' with default password: $authResult")
     //endregion
 
     //region JWT config
@@ -150,14 +147,23 @@ fun main() {
                 call.respondText("OK")
             }
 
+            registerUserRoutes()
             // Delegate all auth routes to routes/AuthRoutes.kt
             authRoutes(
-                auth,
                 jwtIssuer,
                 jwtAudience,
                 jwtRealm,
                 algorithm
             )
+            // Register category routes
+            categoryRoutes()
+            // Register product routes
+            productRoutes()
+            // Register order routes
+            orderRoutes()
+            // Register klanten and tafels routes
+            klantenRoutes()
+            tafelRoutes()
         }
     }.start(wait = true)
     //endregion
