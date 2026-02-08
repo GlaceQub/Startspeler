@@ -41,7 +41,7 @@ fun Route.registerUserRoutes() {
                         passwordHash = hash,
                         salt = salt,
                         groupId = 1,
-                        roleId = 2,
+                        roleId = 3,
                         statusId = 1
                     )
                 } else {
