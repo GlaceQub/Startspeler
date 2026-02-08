@@ -5,6 +5,11 @@
 :root {
   --startspeler-primary: #2B3078;
   --startspeler-secondary: #d7d9f7;
+  --startspeler-accent: #ff9800;
+  --startspeler-error: #d32f2f;
+  --startspeler-success: #388e3c;
+  --startspeler-text: #222;
+  --startspeler-bg: #fff;
 }
 
 
@@ -199,3 +204,21 @@ body {
 
 
 /* Custom Button styling for other buttons in the app */
+.app-button {
+  font-family: inherit;
+  font-weight: 700;
+  border-radius: 8px;
+  border: 2px solid var(--startspeler-accent);
+  background-color: var(--startspeler-accent);
+  color: white;
+  font-size: 1.5rem;
+  min-width: 40px;
+  height: 40px;
+  box-shadow: none;
+  transition: background 0.2s, color 0.2s;
+}
+.app-button:hover {
+  background-color: #ffa733;
+  color: #fff;
+  border-color: #ffa733;
+}

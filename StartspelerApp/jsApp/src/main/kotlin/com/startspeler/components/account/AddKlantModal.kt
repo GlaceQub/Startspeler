@@ -33,33 +33,36 @@ val AddKlantModal = FC<AddKlantModalProps> { props ->
         onClose = { _, _ -> props.onClose() }
         DialogTitle { +"Nieuwe klant toevoegen" }
         DialogContent {
-            TextField {
-                label = ReactNode("Naam")
-                value = klant.naam
-                onChange = { event ->
-                    val value = event.target.asDynamic().value as String
-                    val newKlant = klantToevoegen()
-                    newKlant.naam = value
-                    newKlant.email = klant.email
-                    setKlant(newKlant)
+            mui.system.Box {
+                sx = js("{ display: 'flex', flexDirection: 'column', gap: '16px' }")
+                TextField {
+                    label = ReactNode("Naam")
+                    value = klant.naam
+                    onChange = { event ->
+                        val value = event.target.asDynamic().value as String
+                        val newKlant = klantToevoegen()
+                        newKlant.naam = value
+                        newKlant.email = klant.email
+                        setKlant(newKlant)
+                    }
+                    fullWidth = true
+                    error = nameExists
+                    helperText = if (nameExists) ReactNode("Deze naam bestaat al") else null
                 }
-                fullWidth = true
-                error = nameExists
-                helperText = if (nameExists) ReactNode("Deze naam bestaat al") else null
-            }
-            TextField {
-                label = ReactNode("Email (optioneel)")
-                value = klant.email ?: ""
-                onChange = { event ->
-                    val value = event.target.asDynamic().value as String
-                    val newKlant = klantToevoegen()
-                    newKlant.naam = klant.naam
-                    newKlant.email = value
-                    setKlant(newKlant)
+                TextField {
+                    label = ReactNode("Email (optioneel)")
+                    value = klant.email ?: ""
+                    onChange = { event ->
+                        val value = event.target.asDynamic().value as String
+                        val newKlant = klantToevoegen()
+                        newKlant.naam = klant.naam
+                        newKlant.email = value
+                        setKlant(newKlant)
+                    }
+                    fullWidth = true
+                    error = emailExists
+                    helperText = if (emailExists) ReactNode("Dit emailadres bestaat al") else ReactNode("Optioneel")
                 }
-                fullWidth = true
-                error = emailExists
-                helperText = if (emailExists) ReactNode("Dit emailadres bestaat al") else ReactNode("Optioneel")
             }
         }
         DialogActions {
