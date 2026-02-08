@@ -94,7 +94,8 @@ val Cart = FC<CartProps> { props ->
                 }
             }
             Button {
-                sx = js("{ minWidth: '40px', height: '40px', backgroundColor: 'var(--startspeler-accent)', color: 'white', fontWeight: 700, borderRadius: '8px' }")
+                asDynamic().className = "app-button"
+                sx = js("{ minWidth: '40px', height: '40px', fontSize: '1.5rem' }")
                 onClick = { _ -> props.onAddKlant() }
                 +"+"
             }
