@@ -21,6 +21,7 @@ import io.ktor.server.auth.*
 import io.ktor.server.auth.jwt.*
 import db.tables.Role
 import db.tables.Product
+import db.tables.Group
 
 
 @Serializable
@@ -52,6 +53,20 @@ fun Routing.orderRoutes() {
             }
             // Calculate total price
             val totalPrice = req.items.sumOf { it.price.toDouble() * it.quantity.toDouble() }.toFloat()
+
+            // Retrieve group discount
+            val groupDiscount = transaction {
+                val userRow = User.select { User.id eq userId }.singleOrNull()
+                val groupId = userRow?.get(User.groupId)
+                if (groupId != null) {
+                    Group.select { Group.id eq groupId }.singleOrNull()?.get(Group.discount) ?: 0.0f
+                } else {
+                    0.0f
+                }
+            }
+            val priceAfterDiscount = if (groupDiscount > 0.0f) {
+                totalPrice * (1.0f - groupDiscount / 100.0f)
+            } else totalPrice
             val now = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
 
             // Determine if placed by staff
@@ -75,7 +90,7 @@ fun Routing.orderRoutes() {
                     it[Order.tableId] = tableId
                     it[Order.statusId] = 5
                     it[Order.totalPrice] = totalPrice
-                    it[Order.priceAfterDiscount] = null
+                    it[Order.priceAfterDiscount] = priceAfterDiscount
                     it[Order.createdAt] = now
                     it[Order.isPlacedByStaff] = isPlacedByStaff
                     it[Order.remarks] = null
@@ -94,7 +109,7 @@ fun Routing.orderRoutes() {
                     val currentPopularity = Product.select { Product.id eq item.productId }
                         .singleOrNull()?.get(Product.popularity) ?: 0
                     Product.update({ Product.id eq item.productId }) {
-                        it[Product.popularity] = (currentPopularity ?: 0) + item.quantity
+                        it[Product.popularity] = currentPopularity + item.quantity
                     }
                 }
             }
