@@ -19,13 +19,13 @@ import io.ktor.server.auth.jwt.*
 import com.auth0.jwt.JWT
 import com.auth0.jwt.algorithms.Algorithm
 import startspeler.server.routes.authRoutes
-import startspeler.server.routes.registerUserRoutes
 import startspeler.server.routes.categoryRoutes
 import startspeler.server.routes.productRoutes
 import startspeler.server.routes.orderRoutes
 import startspeler.server.routes.klantenRoutes
 import startspeler.server.routes.tafelRoutes
 import startspeler.server.repository.UserRepository
+import startspeler.server.routes.registerCombinedUserRoutes
 
 fun main() {
     //region Database setup
@@ -147,7 +147,17 @@ fun main() {
                 call.respondText("OK")
             }
 
-            registerUserRoutes()
+            // Temporary admin-check using JWT principal 'role' claim.
+            // Replace with your real authorization logic if needed.
+            suspend fun adminCheck(call: ApplicationCall): Boolean {
+                val principal = call.principal<JWTPrincipal>()
+                // Require a "role" claim with value "admin"
+                return principal?.payload?.getClaim("role")?.asString() == "admin"
+            }
+
+            // Register combined public + admin user routes
+            registerCombinedUserRoutes(::adminCheck)
+
             // Delegate all auth routes to routes/AuthRoutes.kt
             authRoutes(
                 jwtIssuer,
