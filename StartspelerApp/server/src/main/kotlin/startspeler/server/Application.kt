@@ -25,6 +25,7 @@ import startspeler.server.routes.productRoutes
 import startspeler.server.routes.orderRoutes
 import startspeler.server.routes.klantenRoutes
 import startspeler.server.routes.tafelRoutes
+import startspeler.server.routes.inventoryRoutes
 import startspeler.server.repository.UserRepository
 
 fun main() {
@@ -164,6 +165,7 @@ fun main() {
             // Register klanten and tafels routes
             klantenRoutes()
             tafelRoutes()
+            inventoryRoutes()
         }
     }.start(wait = true)
     //endregion
