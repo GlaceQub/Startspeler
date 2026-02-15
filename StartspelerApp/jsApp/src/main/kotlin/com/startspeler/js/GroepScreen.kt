@@ -13,6 +13,8 @@ import react.Props
 import react.useEffect
 import react.useState
 import react.useEffectOnce
+import kotlin.js.JSON
+import kotlin.js.json
 
 external interface GroepScreenProps : Props
 
@@ -30,38 +32,55 @@ val GroepScreen = FC<GroepScreenProps> {
         window.fetch("/config.json")
             .then { response ->
                 if (!response.ok) {
-                    setError("Failed to load config.json: ${response.status} ${response.statusText}")
+                    // fallback to localhost for dev if config.json missing
+                    console.warn("Failed to load config.json: ${'$'}{response.status} ${'$'}{response.statusText} — falling back to http://localhost:8080 for dev")
+                    setError("Failed to load config.json: ${'$'}{response.status} ${'$'}{response.statusText}")
+                    setBackendUrl("http://localhost:8080")
                     return@then
                 }
                 response.json().then { dataAny ->
                     val data = dataAny.unsafeCast<dynamic>()
-                    setBackendUrl(data.backendUrl as? String)
+                    setBackendUrl(data.backendUrl as? String ?: "http://localhost:8080")
                 }
             }
-            .catch { throwable ->
-                setError("Error loading config.json: $throwable")
+            .catch { _ ->
+                console.warn("Error loading config.json — falling back to http://localhost:8080 for dev")
+                setError("Error loading config.json")
+                setBackendUrl("http://localhost:8080")
             }
+    }
+
+    // Reusable loader so we can refresh after creating a group
+    val loadGroepen: () -> Unit = label@{
+        val url = backendUrl ?: return@label
+        setLoadingGroepen(true)
+        MainScope().launch {
+            try {
+                val resp = window.fetch(
+                    url.trimEnd('/') + "/groepen/raw"
+                ).await()
+
+                if (!resp.ok) {
+                    setError("Fout bij het ophalen van de groepen: ${'$'}{resp.status} ${'$'}{resp.statusText}")
+                    return@launch
+                }
+
+                val responseText = resp.text().await()
+                val fetchedGroups = Json.decodeFromString<List<Group>>(responseText)
+                setGroepen(fetchedGroups)
+
+            } catch (_: Throwable) {
+                setError("Fout bij het ophalen van de groepen")
+            } finally {
+                setLoadingGroepen(false)
+            }
+        }
     }
 
     // Fetch groups when backendUrl is available
     useEffect(dependencies = arrayOf(backendUrl)) {
         if (backendUrl != null) {
-            setLoadingGroepen(true)
-            MainScope().launch {
-                try {
-                    val responseText = window.fetch(
-                        backendUrl.trimEnd('/') + "/groepen"
-                    ).await().text().await()
-
-                    val fetchedGroups = Json.decodeFromString<List<Group>>(responseText)
-                    setGroepen(fetchedGroups)
-
-                } catch (e: Throwable) {
-                    setError("Fout bij het ophalen van de groepen: $e")
-                } finally {
-                    setLoadingGroepen(false)
-                }
-            }
+            loadGroepen()
         }
     }
 
@@ -79,28 +98,26 @@ val GroepScreen = FC<GroepScreenProps> {
         if (name.isNotBlank() && backendUrl != null) {
             MainScope().launch {
                 try {
-                    val bodyObj = js("{ name: name, discount: discount }")
+                    val bodyObj = json("name" to name, "discount" to discount)
 
-                    val requestInit = js(
-                        """
-                        {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json' },
-                            body: JSON.stringify(bodyObj)
-                        }
-                        """
-                    )
+                    val requestInit = js("{}")
+                    requestInit.method = "POST"
+                    requestInit.headers = json("Content-Type" to "application/json")
+                    requestInit.body = JSON.stringify(bodyObj)
 
                     val response = window.fetch(
-                        backendUrl.trimEnd('/') + "/groep/add",
+                        backendUrl.trimEnd('/') + "/groepen/add",
                         requestInit
                     ).await()
 
                     if (response.ok) {
-                        val created = response.json().await().unsafeCast<Group>()
-                        setGroepen(groepen + created)
+                        // Refresh the list from server so UI matches DB
+                        loadGroepen()
+                        // optional quick feedback
+                        try { window.alert("Groep toegevoegd") } catch (_: Throwable) { console.info("Groep toegevoegd") }
                     } else {
-                        setError("Groep toevoegen mislukt: ${response.status} ${response.statusText}")
+                        val text = try { response.text().await() } catch (_: Throwable) { "" }
+                        setError("Groep toevoegen mislukt: ${'$'}{response.status} ${'$'}{response.statusText} ${'$'}{text}")
                     }
 
                 } catch (_: Throwable) {

@@ -10,39 +10,30 @@ import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 
 object GroepRepository{
 
-    //GET ALL GROUPS
+    //GET ALL GROUPS (simpler, more robust)
     fun getAll(): List<GroepItem> = transaction {
-        val membercount = User.id.count()
-        (Group leftJoin User)
-            .slice(Group.id, Group.name, Group.discount, membercount)
-            .selectAll()
-            .groupBy(Group.id, Group.name, Group.discount)
-            .map { row ->
-                GroepItem(
-                    id = row[Group.id].toString(),
-                    name = row[Group.name],
-                    discount = row[Group.discount],
-                    memberCount = row[membercount].toInt()
-                )
-            }
+        Group.selectAll().map { row ->
+            val gid = row[Group.id]
+            val memberCount = User.select { User.groupId eq gid }.count().toInt()
+            GroepItem(
+                id = gid,
+                name = row[Group.name],
+                discount = row[Group.discount],
+                memberCount = memberCount
+            )
+        }
     }
 
     //GET GROUP BY ID
     fun getGroupById(id: Int): GroepItem? = transaction {
-        val membercount = User.id.count()
-        (Group leftJoin User)
-            .slice(Group.id, Group.name, membercount)
-            .select { Group.id eq id }
-            .groupBy(Group.id, Group.name)
-            .map { row ->
-                GroepItem(
-                    id = row[Group.id].toString(),
-                    name = row[Group.name],
-                    discount = row[Group.discount],
-                    memberCount = row[membercount].toInt()
-                )
-            }
-            .firstOrNull()
+        val row = Group.select { Group.id eq id }.firstOrNull() ?: return@transaction null
+        val memberCount = User.select { User.groupId eq id }.count().toInt()
+        GroepItem(
+            id = row[Group.id],
+            name = row[Group.name],
+            discount = row[Group.discount],
+            memberCount = memberCount
+        )
     }
 
     //ADD GROUP
@@ -54,9 +45,9 @@ object GroepRepository{
 
 
         GroepItem(
-            id = newId.toString(),
+            id = newId,
             name = name,
-            discount = null,
+            discount = discount,
             memberCount = 0
         )
     }
@@ -67,5 +58,3 @@ object GroepRepository{
     }
 
 }
-
-

@@ -85,8 +85,13 @@ private val App = FC<Props> {
                     }
                     
                     "usercreate" -> UserCreateScreen {
+                        // You can pass loggedIn here if UserCreateScreen needs it
+                    }
 
-            }
+                    // Accept both 'groepen' (used by Navbar) and 'groep' (legacy)
+                    "groepen", "groep" -> GroepScreen {
+                        // You can pass loggedIn here if GroepScreen needs it
+                    }
 
                     else -> LoginScreen {
                         this.loggedIn = loggedIn

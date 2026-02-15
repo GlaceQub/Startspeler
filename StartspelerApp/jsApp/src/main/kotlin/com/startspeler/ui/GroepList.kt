@@ -29,7 +29,7 @@ val GroepList = FC<GroepListProps> { props ->
             TableBody {
                 props.groepen.forEach { groep ->
                     val groepItem = GroepItem(
-                        id = groep.id.toString(),
+                        id = groep.id,
                         name = groep.name,
                         discount = groep.discount,
                         memberCount = groep.memberCount
