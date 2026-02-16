@@ -20,4 +20,16 @@ object InventoryRepository {
             )
         }
     }
+
+        fun getByProductId(productId: Int): Inventory? = transaction {
+            InventoryTable.select { InventoryTable.productId eq productId }.map {
+                Inventory(
+                    id = it[InventoryTable.id],
+                    productId = it[InventoryTable.productId],
+                    quantity = it[InventoryTable.quantity],
+                    minimumQuantity = it[InventoryTable.minimumQuantity],
+                    lastUpdated = it[InventoryTable.lastUpdated]
+                )
+            }.singleOrNull()
+        }
 }

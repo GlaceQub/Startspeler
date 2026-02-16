@@ -1,12 +1,14 @@
 package com.startspeler.js
 
 import com.startspeler.ui.InventoryPage
+import com.startspeler.ui.InventoryView
 import kotlinx.browser.window
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.await
 import kotlinx.coroutines.launch
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
 import mui.material.Alert
 import mui.material.Snackbar
@@ -34,13 +36,19 @@ data class ProductMinDto(
     val name: String? = null
 )
 
+@Serializable
+data class InventoryUpdateRequest(
+    val quantity: Int,
+    val minimumQuantity: Int? = null
+)
+
 external interface InventoryScreenProps : Props
 
 val InventoryScreen = FC<InventoryScreenProps> {
     val (inventoryItems, setInventoryItems) = useState<List<InventoryDto>>(emptyList())
     val (products, setProducts) = useState<List<ProductMinDto>>(emptyList())
     val (merged, setMerged) = useState<List<dynamic>>(emptyList())
-    val (selectedItem, setSelectedItem) = useState<dynamic>(null)
+    val (selectedItem, setSelectedItem) = useState<InventoryView?>(null)
     val (backendUrl, setBackendUrl) = useState<String?>(null)
     val (loading, setLoading) = useState(false)
     val (error, setError) = useState<String?>(null)
@@ -121,32 +129,102 @@ val InventoryScreen = FC<InventoryScreenProps> {
         setMerged(viewList)
     }
 
-    // callbacks (placeholder behavior for now)
+    // bewerk via nieuwe routes: GET /inventory/{id} -> prompts -> PUT /inventory/{id}
+    val handleEdit: (InventoryView) -> Unit = { item ->
+        if (backendUrl == null) {
+            setSnackbarMsg("Backend URL niet geladen.")
+            setSnackbarOpen(true)
+        } else {
+            scope.launch {
+                try {
+                    // Haal actueel item op
+                    val getResp = window.fetch(backendUrl.trimEnd('/') + "/inventory/${item.id}").await()
+                    val getText = getResp.text().await()
+                    console.log("GET /inventory/${item.id} status:", getResp.status, getResp.statusText)
+                    console.log("GET /inventory/${item.id} body:", getText)
+
+                    if (getResp.ok) {
+                        val current = json.decodeFromString(InventoryDto.serializer(), getText)
+
+                        // Vraag nieuwe voorraad
+                        val inputQty = window.prompt(
+                            "Nieuwe voorraad voor ${item.productName ?: "Product #${item.productId}"}",
+                            current.quantity.toString()
+                        )
+                        val newQty = inputQty?.toIntOrNull()
+
+                        if (inputQty == null) {
+                            // geannuleerd, doe niets
+                        } else if (newQty == null || newQty < 0) {
+                            setSnackbarMsg("Voer een geldige voorraad (>= 0) in.")
+                            setSnackbarOpen(true)
+                        } else {
+                            // Vraag nieuwe minimum (optioneel)
+                            val inputMin = window.prompt(
+                                "Nieuwe minimale voorraad (leeg laten voor ongewijzigd)",
+                                current.minimumQuantity?.toString() ?: ""
+                            )
+                            val newMin = inputMin?.ifBlank { null }?.toIntOrNull() ?: current.minimumQuantity
+
+                            // Stuur update
+                            val req = InventoryUpdateRequest(quantity = newQty, minimumQuantity = newMin)
+                            val bodyStr = json.encodeToString(req)
+                            val init: dynamic = js("{}")
+                            init.method = "PUT"
+                            init.headers = js("{ 'Content-Type': 'application/json' }")
+                            init.body = bodyStr
+
+                            val putResp = window.fetch(backendUrl.trimEnd('/') + "/inventory/${item.id}", init).await()
+                            val putText = putResp.text().await()
+                            console.log("PUT /inventory/${item.id} status:", putResp.status, putResp.statusText)
+                            console.log("PUT /inventory/${item.id} body:", putText)
+
+                            if (putResp.ok) {
+                                val updated = json.decodeFromString(InventoryDto.serializer(), putText)
+                                // vervang lokaal geüpdatete item; merge effect bouwt de view opnieuw
+                                setInventoryItems(inventoryItems.map { if (it.id == updated.id) updated else it })
+                                setSelectedItem(item) // eventueel geselecteerd item behouden
+                                setSnackbarMsg("Voorraad bijgewerkt")
+                                setSnackbarOpen(true)
+                            } else {
+                                setSnackbarMsg("Bijwerken mislukt: ${putResp.status} ${putResp.statusText}")
+                                setSnackbarOpen(true)
+                            }
+                        }
+                    } else {
+                        setSnackbarMsg("Item ophalen mislukt: ${getResp.status} ${getResp.statusText}")
+                        setSnackbarOpen(true)
+                    }
+                } catch (e: Throwable) {
+                    console.error("Fout bij bewerken:", e)
+                    setSnackbarMsg("Fout bij bewerken: $e")
+                    setSnackbarOpen(true)
+                }
+            }
+        }
+    }
+
+    val handleDelete: (InventoryView) -> Unit = { item ->
+        setSnackbarMsg("Delete inventory id=${item.id} - nog niet geïmplementeerd")
+        setSnackbarOpen(true)
+    }
     val handleAdd: () -> Unit = {
         setSnackbarMsg("Add inventory - nog niet geïmplementeerd")
         setSnackbarOpen(true)
     }
-    val handleEdit: (dynamic) -> Unit = { item ->
-        setSnackbarMsg("Edit inventory id=${item.id} - nog niet geïmplementeerd")
-        setSnackbarOpen(true)
-    }
-    val handleDelete: (dynamic) -> Unit = { item ->
-        setSnackbarMsg("Delete inventory id=${item.id} - nog niet geïmplementeerd")
-        setSnackbarOpen(true)
-    }
-    val handleSelect: (dynamic) -> Unit = { item ->
+    val handleSelect: (InventoryView?) -> Unit = { item ->
         setSelectedItem(item)
     }
 
     InventoryPage {
-        this.items = merged.unsafeCast<List<com.startspeler.ui.InventoryView>>()
+        this.items = merged.unsafeCast<List<InventoryView>>()
         this.loading = loading
         this.error = error
         this.onAdd = handleAdd
-        this.onEdit = { it: com.startspeler.ui.InventoryView -> handleEdit(it) }
-        this.onDelete = { it: com.startspeler.ui.InventoryView -> handleDelete(it) }
-        this.onSelect = { it: com.startspeler.ui.InventoryView? -> handleSelect(it) }
-        this.selectedItem = selectedItem.unsafeCast<com.startspeler.ui.InventoryView?>()
+        this.onEdit = handleEdit
+        this.onDelete = handleDelete
+        this.onSelect = handleSelect
+        this.selectedItem = selectedItem
     }
 
     Snackbar {

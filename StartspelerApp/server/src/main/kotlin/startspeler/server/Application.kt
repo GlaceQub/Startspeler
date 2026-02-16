@@ -27,6 +27,7 @@ import startspeler.server.routes.klantenRoutes
 import startspeler.server.routes.tafelRoutes
 import startspeler.server.routes.inventoryRoutes
 import startspeler.server.repository.UserRepository
+import io.ktor.http.HttpMethod
 
 fun main() {
     //region Database setup
@@ -117,6 +118,9 @@ fun main() {
             anyHost()
             allowHeader("Content-Type")
             allowHeader("Authorization")
+            allowMethod(HttpMethod.Get)
+            allowMethod(HttpMethod.Post)
+            allowMethod(HttpMethod.Put)
         }
         install(Authentication) {
             jwt("auth-jwt") {
