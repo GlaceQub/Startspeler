@@ -55,7 +55,6 @@ val InventoryScreen = FC<InventoryScreenProps> {
     val (snackbarOpen, setSnackbarOpen) = useState(false)
     val (snackbarMsg, setSnackbarMsg) = useState("")
 
-    // load backend url
     useEffectOnce {
         window.fetch("/config.json")
             .then { resp ->
@@ -73,7 +72,6 @@ val InventoryScreen = FC<InventoryScreenProps> {
             .catch { e -> setError("Error loading config.json: $e") }
     }
 
-    // fetch inventory and products
     useEffect(dependencies = arrayOf(backendUrl)) {
         if (backendUrl == null) return@useEffect
         setLoading(true)
@@ -82,23 +80,19 @@ val InventoryScreen = FC<InventoryScreenProps> {
                 val invResp = window.fetch(backendUrl.trimEnd('/') + "/inventory").await()
                 val invText = invResp.text().await()
                 console.log("GET /inventory status:", invResp.status, invResp.statusText)
-                console.log("GET /inventory body:", invText)
                 if (!invResp.ok) {
                     setError("Failed to fetch inventory: ${invResp.status} ${invResp.statusText}")
                     setInventoryItems(emptyList())
                 } else {
                     val invList = json.decodeFromString(ListSerializer(InventoryDto.serializer()), invText)
-                    console.log("Parsed inventory items:", invList.size)
                     setInventoryItems(invList)
                 }
 
                 val prodResp = window.fetch(backendUrl.trimEnd('/') + "/products").await()
                 val prodText = prodResp.text().await()
                 console.log("GET /products status:", prodResp.status, prodResp.statusText)
-                console.log("GET /products body:", prodText)
                 if (prodResp.ok) {
                     val prodList = json.decodeFromString(ListSerializer(ProductMinDto.serializer()), prodText)
-                    console.log("Parsed products:", prodList.size)
                     setProducts(prodList)
                 } else {
                     setProducts(emptyList())
@@ -112,7 +106,6 @@ val InventoryScreen = FC<InventoryScreenProps> {
         }
     }
 
-    // merge inventory + product names into view objects (zonder jso, met dynamic)
     useEffect(dependencies = arrayOf(inventoryItems, products)) {
         val prodMap = products.associateBy { it.id }
         val viewList = inventoryItems.map { inv ->
@@ -125,11 +118,9 @@ val InventoryScreen = FC<InventoryScreenProps> {
             obj.lastUpdated = inv.lastUpdated
             obj
         }
-        console.log("Merged view items:", viewList.size)
         setMerged(viewList)
     }
 
-    // bewerk via nieuwe routes: GET /inventory/{id} -> prompts -> PUT /inventory/{id}
     val handleEdit: (InventoryView) -> Unit = { item ->
         if (backendUrl == null) {
             setSnackbarMsg("Backend URL niet geladen.")
@@ -137,53 +128,39 @@ val InventoryScreen = FC<InventoryScreenProps> {
         } else {
             scope.launch {
                 try {
-                    // Haal actueel item op
                     val getResp = window.fetch(backendUrl.trimEnd('/') + "/inventory/${item.id}").await()
                     val getText = getResp.text().await()
                     console.log("GET /inventory/${item.id} status:", getResp.status, getResp.statusText)
-                    console.log("GET /inventory/${item.id} body:", getText)
-
                     if (getResp.ok) {
                         val current = json.decodeFromString(InventoryDto.serializer(), getText)
-
-                        // Vraag nieuwe voorraad
                         val inputQty = window.prompt(
                             "Nieuwe voorraad voor ${item.productName ?: "Product #${item.productId}"}",
                             current.quantity.toString()
                         )
                         val newQty = inputQty?.toIntOrNull()
-
                         if (inputQty == null) {
-                            // geannuleerd, doe niets
+                            // geannuleerd
                         } else if (newQty == null || newQty < 0) {
                             setSnackbarMsg("Voer een geldige voorraad (>= 0) in.")
                             setSnackbarOpen(true)
                         } else {
-                            // Vraag nieuwe minimum (optioneel)
                             val inputMin = window.prompt(
                                 "Nieuwe minimale voorraad (leeg laten voor ongewijzigd)",
                                 current.minimumQuantity?.toString() ?: ""
                             )
                             val newMin = inputMin?.ifBlank { null }?.toIntOrNull() ?: current.minimumQuantity
-
-                            // Stuur update
                             val req = InventoryUpdateRequest(quantity = newQty, minimumQuantity = newMin)
                             val bodyStr = json.encodeToString(req)
                             val init: dynamic = js("{}")
                             init.method = "PUT"
                             init.headers = js("{ 'Content-Type': 'application/json' }")
                             init.body = bodyStr
-
                             val putResp = window.fetch(backendUrl.trimEnd('/') + "/inventory/${item.id}", init).await()
                             val putText = putResp.text().await()
-                            console.log("PUT /inventory/${item.id} status:", putResp.status, putResp.statusText)
-                            console.log("PUT /inventory/${item.id} body:", putText)
-
                             if (putResp.ok) {
                                 val updated = json.decodeFromString(InventoryDto.serializer(), putText)
-                                // vervang lokaal geüpdatete item; merge effect bouwt de view opnieuw
                                 setInventoryItems(inventoryItems.map { if (it.id == updated.id) updated else it })
-                                setSelectedItem(item) // eventueel geselecteerd item behouden
+                                setSelectedItem(item)
                                 setSnackbarMsg("Voorraad bijgewerkt")
                                 setSnackbarOpen(true)
                             } else {
@@ -205,13 +182,40 @@ val InventoryScreen = FC<InventoryScreenProps> {
     }
 
     val handleDelete: (InventoryView) -> Unit = { item ->
-        setSnackbarMsg("Delete inventory id=${item.id} - nog niet geïmplementeerd")
-        setSnackbarOpen(true)
+        if (backendUrl == null) {
+            setSnackbarMsg("Backend URL niet geladen.")
+            setSnackbarOpen(true)
+        } else {
+            val confirmed = window.confirm("Weet je zeker dat je inventory item #${item.id} wilt verwijderen?")
+            if (confirmed) {
+                scope.launch {
+                    try {
+                        val url = backendUrl.trimEnd('/') + "/inventory/${item.id}"
+                        val init: dynamic = js("{}")
+                        init.method = "DELETE"
+                        val resp = window.fetch(url, init).await()
+                        val respText = resp.text().await()
+                        console.log("DELETE $url status:", resp.status, resp.statusText)
+                        console.log("DELETE body:", respText)
+                        if (resp.ok) {
+                            setInventoryItems(inventoryItems.filter { it.id != item.id })
+                            setSelectedItem { null }
+                            setSnackbarMsg("Inventory item verwijderd")
+                            setSnackbarOpen(true)
+                        } else {
+                            setSnackbarMsg("Verwijderen mislukt: ${resp.status} ${resp.statusText}")
+                            setSnackbarOpen(true)
+                        }
+                    } catch (e: Throwable) {
+                        console.error("Fout bij verwijderen:", e)
+                        setSnackbarMsg("Fout bij verwijderen: $e")
+                        setSnackbarOpen(true)
+                    }
+                }
+            }
+        }
     }
-    val handleAdd: () -> Unit = {
-        setSnackbarMsg("Add inventory - nog niet geïmplementeerd")
-        setSnackbarOpen(true)
-    }
+
     val handleSelect: (InventoryView?) -> Unit = { item ->
         setSelectedItem(item)
     }
@@ -220,7 +224,6 @@ val InventoryScreen = FC<InventoryScreenProps> {
         this.items = merged.unsafeCast<List<InventoryView>>()
         this.loading = loading
         this.error = error
-        this.onAdd = handleAdd
         this.onEdit = handleEdit
         this.onDelete = handleDelete
         this.onSelect = handleSelect

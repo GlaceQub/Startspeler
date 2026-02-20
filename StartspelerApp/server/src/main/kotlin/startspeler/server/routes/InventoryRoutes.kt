@@ -7,6 +7,7 @@ import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import kotlinx.serialization.Serializable
 import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.transaction
 import db.tables.Inventory as InventoryTable
 
@@ -17,13 +18,6 @@ data class InventoryDto(
     val quantity: Int,
     val minimumQuantity: Int? = null,
     val lastUpdated: String? = null
-)
-
-@Serializable
-data class InventoryCreateRequest(
-    val productId: Int,
-    val quantity: Int,
-    val minimumQuantity: Int? = null
 )
 
 @Serializable
@@ -74,35 +68,6 @@ fun Routing.inventoryRoutes() {
             call.respond(item)
         }
 
-        post("add") {
-            val req = call.receive<InventoryCreateRequest>()
-
-            val newId = transaction {
-                InventoryTable.insert {
-                    it[productId] = req.productId
-                    it[quantity] = req.quantity
-                    it[minimumQuantity] = req.minimumQuantity
-                } get InventoryTable.id
-            }
-
-            val created = transaction {
-                InventoryTable
-                    .select { InventoryTable.id eq newId }
-                    .single()
-                    .let {
-                        InventoryDto(
-                            id = it[InventoryTable.id],
-                            productId = it[InventoryTable.productId],
-                            quantity = it[InventoryTable.quantity],
-                            minimumQuantity = it[InventoryTable.minimumQuantity],
-                            lastUpdated = it[InventoryTable.lastUpdated]?.toString()
-                        )
-                    }
-            }
-
-            call.respond(HttpStatusCode.Created, created)
-        }
-
         put("{id}") {
             val id = call.parameters["id"]?.toIntOrNull()
                 ?: return@put call.respond(HttpStatusCode.BadRequest, "Invalid id")
@@ -134,6 +99,19 @@ fun Routing.inventoryRoutes() {
             }
 
             call.respond(updated)
+        }
+
+        delete("{id}") {
+            val id = call.parameters["id"]?.toIntOrNull()
+                ?: return@delete call.respond(HttpStatusCode.BadRequest, "Invalid id")
+
+            val rows = transaction {
+                InventoryTable.deleteWhere { InventoryTable.id eq id }
+            }
+            if (rows == 0) {
+                return@delete call.respond(HttpStatusCode.NotFound, "Inventory not found")
+            }
+            call.respond(HttpStatusCode.NoContent)
         }
     }
 }

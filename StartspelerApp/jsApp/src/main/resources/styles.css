@@ -1,5 +1,6 @@
 @import "./categoryTile.css";
 @import "./productCard.css";
+@import "./inventory.css";
 
 /* Define Startspeler primary color variable */
 :root {

@@ -118,9 +118,11 @@ fun main() {
             anyHost()
             allowHeader("Content-Type")
             allowHeader("Authorization")
+            allowMethod(HttpMethod.Options)
             allowMethod(HttpMethod.Get)
             allowMethod(HttpMethod.Post)
             allowMethod(HttpMethod.Put)
+            allowMethod(HttpMethod.Delete)
         }
         install(Authentication) {
             jwt("auth-jwt") {
