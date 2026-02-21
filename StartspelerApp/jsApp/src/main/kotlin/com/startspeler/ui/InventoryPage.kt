@@ -16,6 +16,8 @@ external interface InventoryView {
     var quantity: Int
     var minimumQuantity: Int?
     var lastUpdated: String?
+    var categoryId: Int?
+    var categoryName: String?
 }
 
 external interface InventoryPageProps : Props {
@@ -88,33 +90,49 @@ val InventoryPage = FC<InventoryPageProps> { props ->
                         if (filtered.isEmpty()) {
                             ListItem { ListItemText { asDynamic().primary = "Geen inventory items gevonden" } }
                         } else {
-                            filtered.forEach { inv ->
-                                val isLowStock = inv.minimumQuantity != null && inv.quantity < inv.minimumQuantity!!
+                            val sorted = filtered.sortedWith(
+                                compareBy<InventoryView> { it.categoryName ?: "Geen categorie" }
+                                    .thenBy { it.productId }
+                                    .thenBy { it.id }
+                            )
 
-                                ListItem {
-                                    key = inv.id.toString()
-                                    asDynamic().className = if (isLowStock) "inventoryCard inventoryCardLow" else "inventoryCard"
-                                    asDynamic().onClick = { _: dynamic -> props.onSelect(inv) }
+                            val grouped = sorted.groupBy { it.categoryName ?: "Geen categorie" }.toList()
 
-                                    ListItemText {
-                                        asDynamic().primary =
-                                            if (inv.productName.isNullOrBlank()) "Product #${inv.productId}" else inv.productName!!
-                                        asDynamic().secondary = "Voorraad: ${inv.quantity} · Min: ${inv.minimumQuantity ?: "-"}"
-                                    }
-                                    ListItemSecondaryAction {
-                                        IconButton {
-                                            asDynamic().className = "inventoryAction"
-                                            asDynamic().onClick = { e: dynamic -> e.stopPropagation(); props.onEdit(inv) }
-                                            Edit()
-                                        }
-                                        IconButton {
-                                            asDynamic().className = "inventoryAction"
-                                            asDynamic().onClick = { e: dynamic -> e.stopPropagation(); props.onDelete(inv) }
-                                            Delete()
-                                        }
-                                    }
+                            grouped.forEach { (categoryTitle, items) ->
+                                ListSubheader {
+                                    asDynamic().component = "div"
+                                    +categoryTitle
                                 }
-                                Divider {}
+
+                                items.forEach { inv ->
+                                    val isLowStock = inv.minimumQuantity != null && inv.quantity < inv.minimumQuantity!!
+
+                                    ListItem {
+                                        key = inv.id.toString()
+                                        asDynamic().className =
+                                            if (isLowStock) "inventoryCard inventoryCardLow" else "inventoryCard"
+                                        asDynamic().onClick = { _: dynamic -> props.onSelect(inv) }
+
+                                        ListItemText {
+                                            asDynamic().primary =
+                                                if (inv.productName.isNullOrBlank()) "Product #${inv.productId}" else inv.productName!!
+                                            asDynamic().secondary = "Voorraad: ${inv.quantity} · Min: ${inv.minimumQuantity ?: "-"}"
+                                        }
+                                        ListItemSecondaryAction {
+                                            IconButton {
+                                                asDynamic().className = "inventoryAction"
+                                                asDynamic().onClick = { e: dynamic -> e.stopPropagation(); props.onEdit(inv) }
+                                                Edit()
+                                            }
+                                            IconButton {
+                                                asDynamic().className = "inventoryAction"
+                                                asDynamic().onClick = { e: dynamic -> e.stopPropagation(); props.onDelete(inv) }
+                                                Delete()
+                                            }
+                                        }
+                                    }
+                                    Divider {}
+                                }
                             }
                         }
                     }
