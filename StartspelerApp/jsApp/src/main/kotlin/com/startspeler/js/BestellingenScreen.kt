@@ -1,15 +1,12 @@
 package com.startspeler.js
 
-import com.startspeler.components.bestellingen.OrderOverzichtItem
 import com.startspeler.dto.OrderOverzichtItem
+import com.startspeler.ui.BestellingenPage
 import kotlinx.browser.window
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.await
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
-import mui.material.Box
-import mui.material.CircularProgress
-import mui.material.Typography
 import react.FC
 import react.Props
 import react.useEffectOnce
@@ -19,6 +16,13 @@ val BestellingenScreen = FC<Props> {
     val (orders, setOrders) = useState<List<OrderOverzichtItem>>(emptyList())
     val (loading, setLoading) = useState(true)
     val (error, setError) = useState<String?>(null)
+    val (filter, setFilter) = useState("")
+
+    val statusOptions = listOf("aangemaakt", "in behandeling", "betaald")
+    val (selectedStatuses, setSelectedStatuses) = useState<List<String>>(listOf("aangemaakt", "in behandeling"))
+    val handleStatusChange: (List<String>) -> Unit = { setSelectedStatuses(it) }
+
+    val handleFilterChange: (String) -> Unit = { setFilter(it) }
 
     useEffectOnce {
         MainScope().launch {
@@ -44,20 +48,14 @@ val BestellingenScreen = FC<Props> {
         }
     }
 
-    Box {
-        sx = js("{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '16px', width: '100%', boxSizing: 'border-box' }")
-
-        if (loading) {
-            CircularProgress {}
-        } else if (error != null) {
-            Typography { + "Er is iets fout gegaan bij het ophalen van de bestellingen!" }
-        } else {
-            orders.forEach { order ->
-                OrderOverzichtItem {
-                    this.order = order
-                    this.isOpen = false
-                }
-            }
-        }
+    BestellingenPage {
+        this.orders = orders
+        this.loading = loading
+        this.error = error
+        this.filter = filter
+        this.onFilterChange = handleFilterChange
+        this.statusOptions = statusOptions
+        this.selectedStatuses = selectedStatuses
+        this.onStatusChange = handleStatusChange
     }
 }
