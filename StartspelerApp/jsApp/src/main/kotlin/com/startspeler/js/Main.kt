@@ -92,6 +92,10 @@ private val App = FC<Props> {
 
                     }
 
+                    "product" -> ProductScreen {
+
+                    }
+
                     else -> LoginScreen {
                         this.loggedIn = loggedIn
                         this.setLoggedIn = { loggedIn = it }

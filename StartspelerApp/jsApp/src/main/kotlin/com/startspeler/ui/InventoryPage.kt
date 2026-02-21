@@ -1,5 +1,6 @@
 package com.startspeler.ui
 
+import kotlinx.browser.window
 import mui.material.*
 import mui.system.Box
 import mui.icons.material.Edit
@@ -43,7 +44,7 @@ val InventoryPage = FC<InventoryPageProps> { props ->
             Box {
                 sx = js("{ pl: 2 }")
                 asDynamic().className = "inventoryHeader"
-                Typography { asDynamic().variant = "h6"; +"Inventory" }
+                Typography { asDynamic().variant = "h6"; +"Stock beheer" }
             }
 
             Box {
@@ -62,8 +63,8 @@ val InventoryPage = FC<InventoryPageProps> { props ->
                 }
                 Button {
                     asDynamic().className = "inventoryPrimaryBtn"
-                    asDynamic().onClick = { props.onAdd() }
-                    +"Nieuw Inventory item"
+                    asDynamic().onClick = { window.location.hash = "#/product" }
+                    +"Product beheer"
                 }
             }
 
