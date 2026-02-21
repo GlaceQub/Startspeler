@@ -63,6 +63,7 @@ val Navbar = FC<NavBarProps> { props ->
                     +"Bestel"
                 }
 
+                // KLant aanmaken knop
                 Button {
                     onClick = { _ -> window.location.hash = "#/usercreate" }
                     variant = ButtonVariant.contained
@@ -72,7 +73,18 @@ val Navbar = FC<NavBarProps> { props ->
                     if (current == "usercreate") asDynamic().ariaCurrent = "page"
                     +"Klant aanmaken"
                 }
+
+                // Inventory knop (optioneel, alleen zichtbaar voor ingelogde gebruikers)
+                Button {
+                    onClick = { _ -> window.location.hash = "/inventory" }
+                    variant = ButtonVariant.contained
+                    disableElevation = true
+                    val cls = if (current == "inventory") "nav-button active" else "nav-button"
+                    asDynamic().className = cls
+                    if (current == "inventory") asDynamic().ariaCurrent = "page"
+                    +"Inventory"
             }
         }
     }
+}
 }

@@ -83,10 +83,14 @@ private val App = FC<Props> {
                     "bestel" -> BestelScreen {
                         // You can pass loggedIn here if BestelScreen needs it
                     }
+
+                    "inventory" -> InventoryScreen {
+
+                    }
                     
                     "usercreate" -> UserCreateScreen {
 
-            }
+                    }
 
                     else -> LoginScreen {
                         this.loggedIn = loggedIn
