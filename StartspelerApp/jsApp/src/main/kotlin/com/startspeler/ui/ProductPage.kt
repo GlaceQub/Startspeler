@@ -8,7 +8,6 @@ import mui.system.Box
 import org.w3c.dom.HTMLInputElement
 import react.FC
 import react.Props
-import react.useEffect
 import react.useState
 
 external interface ProductView {
@@ -39,7 +38,6 @@ val ProductPage = FC<ProductPageProps> { props ->
     var priceStr by useState("")
     var popularityStr by useState("0")
 
-    // open "new"
     val openNew = {
         editingId = null
         name = ""
@@ -49,7 +47,6 @@ val ProductPage = FC<ProductPageProps> { props ->
         dialogOpen = true
     }
 
-    // open "edit"
     val openEdit: (ProductView) -> Unit = { p ->
         editingId = p.id
         name = p.name
@@ -60,59 +57,87 @@ val ProductPage = FC<ProductPageProps> { props ->
     }
 
     Box {
-        sx = js("{ p: 2 }")
-
+        sx = js(
+            """
+            ({
+              width: "100vw",
+              minHeight: "calc(100vh - 60px)",  // 60px = jouw navbar toolbar hoogte (zie CSS)
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "flex-start",
+              pt: 3,
+              pb: 4,
+              boxSizing: "border-box"
+            })
+            """
+        )
         Box {
-            sx = js("{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }")
-            Typography { asDynamic().variant = "h6"; +"Product beheer" }
-            Button {
-                variant = ButtonVariant.contained
-                asDynamic().onClick = { openNew() }
-                +"Nieuw product"
-            }
-        }
+            sx = js(
+                """
+                ({
+                  width: "100%",
+                  maxWidth: "none",
+                  px: 3,      
+                  boxSizing: "border-box"
+                })
+                """
+            )
 
-        if (props.loading) {
-            Box { CircularProgress {} }
-        } else if (props.error != null) {
-            Alert { asDynamic().severity = "error"; +props.error!! }
-        } else {
-            TableContainer {
-                component = Paper
-                Table {
-                    TableHead {
-                        TableRow {
-                            TableCell { +"ID" }
-                            TableCell { +"Naam" }
-                            TableCell { +"Categorie" }
-                            TableCell { +"Prijs" }
-                            TableCell { +"Populariteit" }
-                            TableCell { +"Acties" }
-                        }
-                    }
-                    TableBody {
-                        props.items.forEach { p ->
+            Box {
+                sx = js("{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }")
+                Typography { asDynamic().variant = "h6"; +"Product beheer" }
+                Button {
+                    variant = ButtonVariant.contained
+                    asDynamic().onClick = { openNew() }
+                    +"Nieuw product"
+                }
+            }
+
+            if (props.loading) {
+                Box { CircularProgress {} }
+            } else if (props.error != null) {
+                Alert { asDynamic().severity = "error"; +props.error!! }
+            } else {
+                TableContainer {
+                    component = Paper
+                    sx = js("{ width: '100%' }")
+                    Table {
+                        size = Size.medium
+                        sx = js("{ '& th, & td': { fontSize: '1rem', py: 1.5 } }")
+                        TableHead {
                             TableRow {
-                                key = p.id.toString()
-                                TableCell { +p.id.toString() }
-                                TableCell { +p.name }
-                                TableCell { +p.categoryName }
-                                TableCell { +p.price.toString() }
-                                TableCell { +p.popularity.toString() }
-                                TableCell {
-                                    Button {
-                                        variant = ButtonVariant.outlined
-                                        size = Size.small
-                                        asDynamic().onClick = { openEdit(p) }
-                                        +"Wijzigen"
-                                    }
-                                    Button {
-                                        variant = ButtonVariant.outlined
-                                        color = ButtonColor.error
-                                        size = Size.small
-                                        sx = js("{ ml: 1 }")
-                                        asDynamic().onClick = { props.onDelete(p.id) }
-                                        +"Verwijder"
+                                TableCell { +"ID" }
+                                TableCell { +"Naam" }
+                                TableCell { +"Categorie" }
+                                TableCell { +"Prijs" }
+                                TableCell { +"Populariteit" }
+                                TableCell { +"Acties" }
+                            }
+                        }
+                        TableBody {
+                            props.items.forEach { p ->
+                                TableRow {
+                                    key = p.id.toString()
+                                    TableCell { +p.id.toString() }
+                                    TableCell { +p.name }
+                                    TableCell { +p.categoryName }
+                                    TableCell { +p.price.toString() }
+                                    TableCell { +p.popularity.toString() }
+                                    TableCell {
+                                        Button {
+                                            variant = ButtonVariant.outlined
+                                            size = Size.small
+                                            asDynamic().onClick = { openEdit(p) }
+                                            +"Wijzigen"
+                                        }
+                                        Button {
+                                            variant = ButtonVariant.outlined
+                                            color = ButtonColor.error
+                                            size = Size.small
+                                            sx = js("{ ml: 1 }")
+                                            asDynamic().onClick = { props.onDelete(p.id) }
+                                            +"Verwijder"
+                                        }
                                     }
                                 }
                             }
@@ -120,93 +145,103 @@ val ProductPage = FC<ProductPageProps> { props ->
                     }
                 }
             }
-        }
 
-        Dialog {
-            open = dialogOpen
-            onClose = { _, _ -> dialogOpen = false }
+            Dialog {
+                open = dialogOpen
+                onClose = { _, _ -> dialogOpen = false }
 
-            DialogTitle {
-                if (editingId == null) +"Nieuw product toevoegen" else +"Product wijzigen (#${editingId})"
-            }
-
-            DialogContent {
-                Box { sx = js("{ display: 'flex', flexDirection: 'column', gap: 12, mt: 1, minWidth: 360 }") }
-
-                TextField {
-                    asDynamic().label = "Naam"
-                    asDynamic().value = name
-                    asDynamic().onChange = { e: dynamic ->
-                        name = (e.target as HTMLInputElement).value
-                    }
-                    asDynamic().fullWidth = true
+                DialogTitle {
+                    if (editingId == null) +"Nieuw product toevoegen" else +"Product wijzigen (#${editingId})"
                 }
 
-                TextField {
-                    asDynamic().label = "Categorie"
-                    asDynamic().select = true
-                    asDynamic().value = categoryIdStr
+                DialogContent {
+                    Box {
+                        sx = js(
+                         """
+                            ({
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: 2,        // MUI spacing units (2 = 16px)
+                              mt: 1,
+                              minWidth: 360
+                            })
+                            """
+                        )
 
-                    asDynamic().onChange = { e: dynamic ->
-                        categoryIdStr = (e.target.value as? String) ?: e.target.value.toString()
-                    }
-
-                    asDynamic().fullWidth = true
-
-                    props.categories.forEach { c ->
-                        MenuItem {
-                            key = c.id.toString()
-                            asDynamic().value = c.id.toString()
-                            +c.name
-                        }
-                    }
-                }
-
-                TextField {
-                    asDynamic().label = "Prijs"
-                    asDynamic().value = priceStr
-                    asDynamic().onChange = { e: dynamic ->
-                        priceStr = (e.target as HTMLInputElement).value
-                    }
-                    asDynamic().fullWidth = true
-                }
-
-                TextField {
-                    asDynamic().label = "Populariteit"
-                    asDynamic().value = popularityStr
-                    asDynamic().onChange = { e: dynamic ->
-                        popularityStr = (e.target as HTMLInputElement).value
-                    }
-                    asDynamic().fullWidth = true
-                }
-            }
-
-            DialogActions {
-                Button {
-                    variant = ButtonVariant.text
-                    asDynamic().onClick = { dialogOpen = false }
-                    +"Annuleer"
-                }
-                Button {
-                    variant = ButtonVariant.contained
-                    asDynamic().onClick = {
-                        val catId = categoryIdStr.toIntOrNull()
-                        val price = priceStr.toFloatOrNull()
-                        val pop = popularityStr.toIntOrNull() ?: 0
-
-                        if (name.isBlank() || catId == null || price == null) {
-                            window.alert("Vul Naam, Categorie en Prijs correct in.")
-                        } else {
-                            val id = editingId
-                            if (id == null) {
-                                props.onAdd(name.trim(), catId, price, pop)
-                            } else {
-                                props.onEdit(id, name.trim(), catId, price, pop)
+                        TextField {
+                            asDynamic().label = "Naam"
+                            asDynamic().value = name
+                            asDynamic().onChange = { e: dynamic ->
+                                name = (e.target as HTMLInputElement).value
                             }
-                            dialogOpen = false
+                            asDynamic().fullWidth = true
+                        }
+
+                        TextField {
+                            asDynamic().label = "Categorie"
+                            asDynamic().select = true
+                            asDynamic().value = categoryIdStr
+                            asDynamic().onChange = { e: dynamic ->
+                                categoryIdStr = (e.target.value as? String) ?: e.target.value.toString()
+                            }
+                            asDynamic().fullWidth = true
+
+                            props.categories.forEach { c ->
+                                MenuItem {
+                                    key = c.id.toString()
+                                    asDynamic().value = c.id.toString()
+                                    +c.name
+                                }
+                            }
+                        }
+
+                        TextField {
+                            asDynamic().label = "Prijs"
+                            asDynamic().value = priceStr
+                            asDynamic().onChange = { e: dynamic ->
+                                priceStr = (e.target as HTMLInputElement).value
+                            }
+                            asDynamic().fullWidth = true
+                        }
+
+                        TextField {
+                            asDynamic().label = "Populariteit"
+                            asDynamic().value = popularityStr
+                            asDynamic().onChange = { e: dynamic ->
+                                popularityStr = (e.target as HTMLInputElement).value
+                            }
+                            asDynamic().fullWidth = true
                         }
                     }
-                    +"Opslaan"
+                }
+
+                DialogActions {
+                    Button {
+                        variant = ButtonVariant.text
+                        asDynamic().onClick = { dialogOpen = false }
+                        +"Annuleer"
+                    }
+                    Button {
+                        variant = ButtonVariant.contained
+                        asDynamic().onClick = {
+                            val catId = categoryIdStr.toIntOrNull()
+                            val price = priceStr.toFloatOrNull()
+                            val pop = popularityStr.toIntOrNull() ?: 0
+
+                            if (name.isBlank() || catId == null || price == null) {
+                                window.alert("Vul Naam, Categorie en Prijs correct in.")
+                            } else {
+                                val id = editingId
+                                if (id == null) {
+                                    props.onAdd(name.trim(), catId, price, pop)
+                                } else {
+                                    props.onEdit(id, name.trim(), catId, price, pop)
+                                }
+                                dialogOpen = false
+                            }
+                        }
+                        +"Opslaan"
+                    }
                 }
             }
         }
