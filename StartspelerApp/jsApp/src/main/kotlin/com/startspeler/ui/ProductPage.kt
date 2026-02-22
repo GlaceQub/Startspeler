@@ -224,33 +224,38 @@ val ProductPage = FC<ProductPageProps> { props ->
                 }
 
                 DialogActions {
-                    Button {
-                        variant = ButtonVariant.text
-                        asDynamic().onClick = { dialogOpen = false }
-                        +"Annuleer"
-                    }
-                    Button {
-                        sx =
-                            js("{ marginTop: 'auto', marginTop: '16px', backgroundColor: 'var(--startspeler-primary)', color: 'white', fontWeight: 700, borderRadius: '20px' }")
-                        variant = ButtonVariant.contained
-                        asDynamic().onClick = {
-                            val catId = categoryIdStr.toIntOrNull()
-                            val price = priceStr.toFloatOrNull()
-                            val pop = popularityStr.toIntOrNull() ?: 0
+                    Box {
+                        sx = js("{ display: 'flex', gap: '12px', alignItems: 'center' }")
 
-                            if (name.isBlank() || catId == null || price == null) {
-                                window.alert("Vul Naam, Categorie en Prijs correct in.")
-                            } else {
-                                val id = editingId
-                                if (id == null) {
-                                    props.onAdd(name.trim(), catId, price, pop)
-                                } else {
-                                    props.onEdit(id, name.trim(), catId, price, pop)
-                                }
-                                dialogOpen = false
-                            }
+                        Button {
+                            variant = ButtonVariant.text
+                            sx = js("{ textTransform: 'none', fontWeight: 700, borderRadius: '20px' }")
+                            asDynamic().onClick = { dialogOpen = false }
+                            +"Annuleer"
                         }
-                        +"Opslaan"
+
+                        Button {
+                            variant = ButtonVariant.contained
+                            sx = js("{ textTransform: 'none', fontWeight: 700, borderRadius: '20px', backgroundColor: 'var(--startspeler-primary)', color: 'white', boxShadow: 'none', '&:hover': { backgroundColor: '#22356a', boxShadow: 'none' } }")
+                            asDynamic().onClick = {
+                                val catId = categoryIdStr.toIntOrNull()
+                                val price = priceStr.toFloatOrNull()
+                                val pop = popularityStr.toIntOrNull() ?: 0
+
+                                if (name.isBlank() || catId == null || price == null) {
+                                    window.alert("Vul Naam, Categorie en Prijs correct in.")
+                                } else {
+                                    val id = editingId
+                                    if (id == null) {
+                                        props.onAdd(name.trim(), catId, price, pop)
+                                    } else {
+                                        props.onEdit(id, name.trim(), catId, price, pop)
+                                    }
+                                    dialogOpen = false
+                                }
+                            }
+                            +"Opslaan"
+                        }
                     }
                 }
             }
