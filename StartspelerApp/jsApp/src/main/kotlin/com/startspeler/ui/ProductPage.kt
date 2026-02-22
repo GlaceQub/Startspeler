@@ -87,6 +87,8 @@ val ProductPage = FC<ProductPageProps> { props ->
                 sx = js("{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }")
                 Typography { asDynamic().variant = "h6"; +"Product beheer" }
                 Button {
+                    sx =
+                        js("{ marginTop: 'auto', marginTop: '16px', backgroundColor: 'var(--startspeler-primary)', color: 'white', fontWeight: 700, borderRadius: '20px' }")
                     variant = ButtonVariant.contained
                     asDynamic().onClick = { openNew() }
                     +"Nieuw product"
@@ -124,19 +126,25 @@ val ProductPage = FC<ProductPageProps> { props ->
                                     TableCell { +p.price.toString() }
                                     TableCell { +p.popularity.toString() }
                                     TableCell {
-                                        Button {
-                                            variant = ButtonVariant.outlined
-                                            size = Size.small
-                                            asDynamic().onClick = { openEdit(p) }
-                                            +"Wijzigen"
-                                        }
-                                        Button {
-                                            variant = ButtonVariant.outlined
-                                            color = ButtonColor.error
-                                            size = Size.small
-                                            sx = js("{ ml: 1 }")
-                                            asDynamic().onClick = { props.onDelete(p.id) }
-                                            +"Verwijder"
+                                        Box {
+                                            sx = js("{ display: 'flex', gap: '12px', alignItems: 'center', mt: 2 }")
+
+                                            Button {
+                                                variant = ButtonVariant.outlined
+                                                size = Size.small
+                                                sx = js("{ textTransform: 'none', fontWeight: 700, borderRadius: '20px' }")
+                                                asDynamic().onClick = { openEdit(p) }
+                                                +"Wijzigen"
+                                            }
+
+                                            Button {
+                                                variant = ButtonVariant.outlined
+                                                color = ButtonColor.error
+                                                size = Size.small
+                                                sx = js("{ textTransform: 'none', fontWeight: 700, borderRadius: '20px' }")
+                                                asDynamic().onClick = { props.onDelete(p.id) }
+                                                +"Verwijder"
+                                            }
                                         }
                                     }
                                 }
@@ -222,6 +230,8 @@ val ProductPage = FC<ProductPageProps> { props ->
                         +"Annuleer"
                     }
                     Button {
+                        sx =
+                            js("{ marginTop: 'auto', marginTop: '16px', backgroundColor: 'var(--startspeler-primary)', color: 'white', fontWeight: 700, borderRadius: '20px' }")
                         variant = ButtonVariant.contained
                         asDynamic().onClick = {
                             val catId = categoryIdStr.toIntOrNull()
