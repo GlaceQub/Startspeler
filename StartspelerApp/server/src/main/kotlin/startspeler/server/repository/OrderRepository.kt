@@ -78,6 +78,17 @@ object OrderRepository {
                 Product.update({ Product.id eq item.productId }) {
                     it[Product.popularity] = currentPopularity + item.quantity
                 }
+                // Verminder stock in Inventory
+                val inventoryRow = Inventory.select { Inventory.productId eq item.productId }.singleOrNull()
+                if (inventoryRow != null) {
+                    val currentStock = inventoryRow[Inventory.quantity]
+                    val newStock = (currentStock - item.quantity).coerceAtLeast(0)
+                    val now = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
+                    Inventory.update({ Inventory.productId eq item.productId }) {
+                        it[Inventory.quantity] = newStock
+                        it[Inventory.lastUpdated] = now
+                    }
+                }
             }
         }
         return orderId
@@ -100,7 +111,7 @@ object OrderRepository {
 
     // Voeg checkoutOrder toe aan object OrderRepository
     fun checkoutOrder(orderId: Int): Boolean = transaction {
-        val orderRow = Order.select { Order.id eq orderId }.singleOrNull() ?: return@transaction false
+        Order.select { Order.id eq orderId }.singleOrNull() ?: return@transaction false
         val betaaldStatusId = Status.select { Status.name eq "betaald" }.singleOrNull()?.get(Status.id) ?: return@transaction false
         val updated = Order.update({ Order.id eq orderId }) {
             it[Order.statusId] = betaaldStatusId
@@ -109,7 +120,7 @@ object OrderRepository {
     }
 
     fun setInBehandeling(orderId: Int): Boolean = transaction {
-        val orderRow = Order.select { Order.id eq orderId }.singleOrNull() ?: return@transaction false
+        Order.select { Order.id eq orderId }.singleOrNull() ?: return@transaction false
         val behandelingStatusId = Status.select { Status.name eq "in behandeling" }.singleOrNull()?.get(Status.id) ?: return@transaction false
         val updated = Order.update({ Order.id eq orderId }) {
             it[Order.statusId] = behandelingStatusId
