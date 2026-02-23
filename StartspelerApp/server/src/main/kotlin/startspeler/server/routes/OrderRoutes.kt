@@ -18,7 +18,9 @@ fun Routing.orderRoutes() {
     route("/order") {
 
         get("/all") {
-            val orders = OrderRepository.getAll()
+            val from = call.request.queryParameters["from"]
+            val to = call.request.queryParameters["to"]
+            val orders = OrderRepository.getAll(from, to)
             call.respond(orders)
         }
 

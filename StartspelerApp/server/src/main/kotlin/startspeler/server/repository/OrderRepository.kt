@@ -5,6 +5,7 @@ import com.startspeler.dto.OrderItemRequest
 import com.startspeler.dto.OverzichtOrderitem
 import db.tables.*
 import kotlinx.datetime.Clock
+import kotlinx.datetime.LocalDateTime
 import kotlinx.datetime.TimeZone
 import kotlinx.datetime.toLocalDateTime
 import org.jetbrains.exposed.sql.*
@@ -12,8 +13,31 @@ import org.jetbrains.exposed.sql.transactions.transaction
 
 object OrderRepository {
 
-    fun getAll(): List<OrderOverzichtItem> = transaction {
-        Order.selectAll().map { orderRow ->
+    fun getAll(from: String? = null, to: String? = null): List<OrderOverzichtItem> = transaction {
+        // Parseer "yyyy-MM-ddTHH:mm" of "yyyy-MM-ddTHH:mm:ss" naar LocalDateTime
+        fun parseDateTime(s: String): LocalDateTime? = try {
+            // Normaliseer: zorg dat seconden aanwezig zijn
+            val normalized = when {
+                s.length == 16 -> "$s:00"   // "2026-02-23T00:00" -> "2026-02-23T00:00:00"
+                s.length == 19 -> s          // al volledig
+                else -> s
+            }
+            LocalDateTime.parse(normalized)
+        } catch (_: Exception) {
+            println("[OrderRepository] parseDateTime FAILED for: '$s'")
+            null
+        }
+
+        val fromDt = from?.also { println("[OrderRepository] from param: '$it'") }?.let { parseDateTime(it) }
+            .also { println("[OrderRepository] fromDt parsed: $it") }
+        val toDt = to?.also { println("[OrderRepository] to param: '$to'") }?.let { parseDateTime(it) }
+            .also { println("[OrderRepository] toDt parsed: $it") }
+
+        Order.selectAll().mapNotNull { orderRow ->
+            val createdAt = orderRow[Order.createdAt]
+            if (fromDt != null && createdAt < fromDt) return@mapNotNull null
+            if (toDt != null && createdAt > toDt) return@mapNotNull null
+
             val orderId = orderRow[Order.id]
             val clientName = User.select { User.id eq orderRow[Order.userId] }
                 .singleOrNull()?.get(User.name) ?: "Onbekend"
@@ -39,7 +63,7 @@ object OrderRepository {
                 clientName = clientName,
                 placedByStaff = orderRow[Order.isPlacedByStaff],
                 orderitems = items,
-                createdAt = orderRow[Order.createdAt].toString() // ISO 8601 string
+                createdAt = orderRow[Order.createdAt].toString()
             )
         }
     }

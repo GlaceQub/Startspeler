@@ -15,7 +15,6 @@ import mui.material.FormControlVariant
 import react.FC
 import react.Props
 import react.dom.events.ChangeEvent
-import react.useState
 
 external interface BestellingenPageProps : Props {
     var orders: List<OrderOverzichtItem>
@@ -26,7 +25,10 @@ external interface BestellingenPageProps : Props {
     var statusOptions: List<String>
     var selectedStatuses: List<String>
     var onStatusChange: (List<String>) -> Unit
-    var onCheckoutSuccess: (() -> Unit)? // callback for parent to refresh orders
+    var onCheckoutSuccess: (() -> Unit)?
+    var selectedDate: String
+    var onSelectedDateChange: (String) -> Unit
+    var onApplyDateFilter: () -> Unit
 }
 
 val BackendUrl = js("window.BackendUrl") as? String ?: "http://localhost:8080"
@@ -35,6 +37,8 @@ val BestellingenPage = FC<BestellingenPageProps> { props ->
 
     Box {
         sx = js("{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '16px', width: '100%', boxSizing: 'border-box' }")
+
+        // Filter rij: zoek + status knoppen
         Box {
             sx = js("{ display: 'flex', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap' }")
             Box {
@@ -78,6 +82,42 @@ val BestellingenPage = FC<BestellingenPageProps> { props ->
                         }
                         sx = js("{ textTransform: 'upper', fontWeight: 500 }")
                         +status
+                    }
+                }
+            }
+        }
+
+        // Datum filter rij
+        Box {
+            sx = js("{ display: 'flex', flexDirection: 'row', alignItems: 'center', gap: '12px', flexWrap: 'wrap', marginBottom: '4px' }")
+            TextField {
+                label = react.ReactNode("Datum")
+                asDynamic().type = "date"
+                value = props.selectedDate
+                variant = FormControlVariant.outlined
+                size = mui.material.Size.small
+                asDynamic().onChange = { event: ChangeEvent<*> ->
+                    props.onSelectedDateChange(event.target.asDynamic().value as String)
+                }
+                asDynamic().InputLabelProps = js("{ shrink: true }")
+                sx = js("{ minWidth: '180px' }")
+            }
+            Button {
+                variant = mui.material.ButtonVariant.contained
+                color = mui.material.ButtonColor.primary
+                size = mui.material.Size.small
+                onClick = { props.onApplyDateFilter() }
+                +"Toepassen"
+            }
+            if (props.selectedDate.isNotEmpty()) {
+                Box {
+                    sx = js("{ display: 'flex', alignItems: 'center', gap: '4px', padding: '4px 10px', background: '#e3f2fd', borderRadius: '16px' }")
+                    mui.icons.material.AccessTime {
+                        sx = js("{ fontSize: '0.95rem', color: '#1976d2' }")
+                    }
+                    Typography {
+                        sx = js("{ fontSize: '0.8rem', color: '#1976d2', whiteSpace: 'nowrap' }")
+                        +"Toont 48u in het verleden"
                     }
                 }
             }
