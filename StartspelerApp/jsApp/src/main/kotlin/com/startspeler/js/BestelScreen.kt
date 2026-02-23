@@ -33,6 +33,7 @@ val BestelScreen = FC<BestelScreenProps> {
     // Cart state
     val (cartItems, setCartItems) = useState<List<CartItem>>(emptyList())
     val (orderSnackbarOpen, setOrderSnackbarOpen) = useState(false)
+    val (stockErrorSnackbarOpen, setStockErrorSnackbarOpen) = useState(false)
 
     // Tafel and Klant state and logic
     val (tafelOptions, setTafelOptions) = useState<List<String>>(emptyList())
@@ -160,8 +161,15 @@ val BestelScreen = FC<BestelScreenProps> {
                         .await()
                         .text()
                         .await()
-                    val products = Json.decodeFromString<List<ProductItem>>(response)
-                    setProducts(products)
+                    val loadedProducts = Json.decodeFromString<List<ProductItem>>(response)
+                    // Pas outOfStock aan op basis van huidige cart
+                    val updatedProducts = loadedProducts.map { p ->
+                        val cartQty = cartItems.find { it.product.id == p.id }?.quantity ?: 0
+                        if (cartQty >= p.stockQuantity && p.stockQuantity > 0) {
+                            p.copy(outOfStock = true)
+                        } else p
+                    }
+                    setProducts(updatedProducts)
                 } catch (e: Throwable) {
                     setError("Fout bij het ophalen van de producten: ${'$'}e")
                 } finally {
@@ -172,20 +180,39 @@ val BestelScreen = FC<BestelScreenProps> {
     }
 
     val handleAddToCart: (ProductItem) -> Unit = { product ->
-        val existing = cartItems.find { it.product.id == product.id }
-        if (existing != null) {
-            setCartItems(cartItems.map { if (it.product.id == product.id) it.copy(quantity = it.quantity + 1) else it })
-        } else {
-            setCartItems(cartItems + CartItem(product, 1))
+        if (!product.outOfStock) {
+            val existing = cartItems.find { it.product.id == product.id }
+            val newQuantity = (existing?.quantity ?: 0) + 1
+
+            val newCart = if (existing != null) {
+                cartItems.map { if (it.product.id == product.id) it.copy(quantity = newQuantity) else it }
+            } else {
+                cartItems + CartItem(product, 1)
+            }
+            setCartItems(newCart)
+
+            // Zet outOfStock lokaal op true als cart quantity de beschikbare stock bereikt
+            setProducts(products.map { p ->
+                if (p.id == product.id && newQuantity >= p.stockQuantity) {
+                    p.copy(outOfStock = true)
+                } else p
+            })
         }
     }
     val handleRemoveFromCart: (CartItem) -> Unit = { item ->
         val existing = cartItems.find { it.product.id == item.product.id }
-        if (existing != null && existing.quantity > 1) {
-            setCartItems(cartItems.map { if (it.product.id == item.product.id) it.copy(quantity = it.quantity - 1) else it })
+        val newQuantity = if (existing != null && existing.quantity > 1) existing.quantity - 1 else 0
+        if (newQuantity > 0) {
+            setCartItems(cartItems.map { if (it.product.id == item.product.id) it.copy(quantity = newQuantity) else it })
         } else {
             setCartItems(cartItems.filterNot { it.product.id == item.product.id })
         }
+        // Zet outOfStock terug op false als er minder in de cart zit dan de stock
+        setProducts(products.map { p ->
+            if (p.id == item.product.id && newQuantity < p.stockQuantity) {
+                p.copy(outOfStock = false)
+            } else p
+        })
     }
     val handleOrder: () -> Unit = {
         console.log("Placing order with items:", cartItems)
@@ -207,6 +234,9 @@ val BestelScreen = FC<BestelScreenProps> {
                     if (response.ok) {
                         setCartItems(emptyList())
                         setOrderSnackbarOpen(true)
+                    } else if (response.asDynamic().status == 409) {
+                        setStockErrorSnackbarOpen(true)
+                        js("setTimeout(function() { window.location.reload(); }, 5000)")
                     } else {
                         setError("Bestelling plaatsen mislukt: "+response.status+" "+response.statusText)
                     }
@@ -259,6 +289,18 @@ val BestelScreen = FC<BestelScreenProps> {
             severity = "success"
             sx = js("{ width: '100%' }")
             +"Bestelling geplaatst!"
+        }
+    }
+
+    // Snackbar for insufficient stock
+    Snackbar {
+        open = stockErrorSnackbarOpen
+        autoHideDuration = 5000
+        onClose = { _, _ -> setStockErrorSnackbarOpen(false) }
+        Alert {
+            severity = "error"
+            sx = js("{ width: '100%' }")
+            +"Sorry, kon niet elk product toevoegen omdat het niet meer in voorraad is."
         }
     }
 }

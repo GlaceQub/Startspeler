@@ -47,8 +47,12 @@ fun Routing.orderRoutes() {
             val isPlacedByStaff = principal != null
 
             val orderId = OrderRepository.add(userId, tableId, totalPrice, priceAfterDiscount, isPlacedByStaff, req.items)
-
-            call.respond(HttpStatusCode.Created, mapOf("orderId" to orderId))
+            when (orderId) {
+                is OrderRepository.AddResult.Success ->
+                    call.respond(HttpStatusCode.Created, mapOf("orderId" to orderId.orderId))
+                is OrderRepository.AddResult.InsufficientStock ->
+                    call.respond(HttpStatusCode.Conflict, mapOf("error" to "insufficient_stock", "products" to orderId.productNames))
+            }
         }
 
         post("/{id}/checkout") {

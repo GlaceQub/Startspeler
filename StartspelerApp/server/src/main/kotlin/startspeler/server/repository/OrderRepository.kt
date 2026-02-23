@@ -68,6 +68,11 @@ object OrderRepository {
         }
     }
 
+    sealed class AddResult {
+        data class Success(val orderId: Int) : AddResult()
+        data class InsufficientStock(val productNames: List<String>) : AddResult()
+    }
+
     fun add(
         userId: Int,
         tableId: Int,
@@ -75,10 +80,27 @@ object OrderRepository {
         priceAfterDiscount: Float,
         isPlacedByStaff: Boolean,
         items: List<OrderItemRequest>
-    ): Int {
+    ): AddResult {
         val now = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
-        val orderId = transaction {
-            Order.insert {
+
+        return transaction {
+            // Atomische stock check: controleer eerst alle items
+            val outOfStock = mutableListOf<String>()
+            items.forEach { item ->
+                val stock = Inventory.select { Inventory.productId eq item.productId }
+                    .singleOrNull()?.get(Inventory.quantity) ?: 0
+                if (stock < item.quantity) {
+                    val productName = Product.select { Product.id eq item.productId }
+                        .singleOrNull()?.get(Product.name) ?: "Onbekend product"
+                    outOfStock.add(productName)
+                }
+            }
+            if (outOfStock.isNotEmpty()) {
+                return@transaction AddResult.InsufficientStock(outOfStock)
+            }
+
+            // Alles in stock: voeg order in
+            val orderId = Order.insert {
                 it[Order.userId] = userId
                 it[Order.tableId] = tableId
                 it[Order.statusId] = 5
@@ -88,8 +110,7 @@ object OrderRepository {
                 it[Order.isPlacedByStaff] = isPlacedByStaff
                 it[Order.remarks] = null
             } get Order.id
-        }
-        transaction {
+
             items.forEach { item ->
                 Orderitem.insert {
                     it[Orderitem.orderId] = orderId
@@ -97,25 +118,24 @@ object OrderRepository {
                     it[Orderitem.quantity] = item.quantity
                     it[Orderitem.price] = item.price
                 }
+                // Update populariteit
                 val currentPopularity = Product.select { Product.id eq item.productId }
                     .singleOrNull()?.get(Product.popularity) ?: 0
                 Product.update({ Product.id eq item.productId }) {
                     it[Product.popularity] = currentPopularity + item.quantity
                 }
-                // Verminder stock in Inventory
-                val inventoryRow = Inventory.select { Inventory.productId eq item.productId }.singleOrNull()
-                if (inventoryRow != null) {
-                    val currentStock = inventoryRow[Inventory.quantity]
-                    val newStock = (currentStock - item.quantity).coerceAtLeast(0)
-                    val now = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
-                    Inventory.update({ Inventory.productId eq item.productId }) {
-                        it[Inventory.quantity] = newStock
-                        it[Inventory.lastUpdated] = now
-                    }
+                // Verminder stock
+                val currentStock = Inventory.select { Inventory.productId eq item.productId }
+                    .singleOrNull()?.get(Inventory.quantity) ?: 0
+                val newStock = (currentStock - item.quantity).coerceAtLeast(0)
+                Inventory.update({ Inventory.productId eq item.productId }) {
+                    it[Inventory.quantity] = newStock
+                    it[Inventory.lastUpdated] = now
                 }
             }
+
+            AddResult.Success(orderId)
         }
-        return orderId
     }
 
     fun getUserIdByName(name: String): Int? = transaction {
