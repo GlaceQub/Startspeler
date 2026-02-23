@@ -48,5 +48,27 @@ fun Routing.orderRoutes() {
 
             call.respond(HttpStatusCode.Created, mapOf("orderId" to orderId))
         }
+
+        post("/{id}/checkout") {
+            val id = call.parameters["id"]?.toIntOrNull()
+                ?: return@post call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Ongeldige order id"))
+            val updated = OrderRepository.checkoutOrder(id)
+            if (updated) {
+                call.respond(HttpStatusCode.OK, mapOf("success" to true))
+            } else {
+                call.respond(HttpStatusCode.NotFound, mapOf("error" to "Order niet gevonden of niet bijgewerkt"))
+            }
+        }
+
+        post("/{id}/inbehandeling") {
+            val id = call.parameters["id"]?.toIntOrNull()
+                ?: return@post call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Ongeldige order id"))
+            val updated = OrderRepository.setInBehandeling(id)
+            if (updated) {
+                call.respond(HttpStatusCode.OK, mapOf("success" to true))
+            } else {
+                call.respond(HttpStatusCode.NotFound, mapOf("error" to "Order niet gevonden of niet bijgewerkt"))
+            }
+        }
     }
 }

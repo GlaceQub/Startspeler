@@ -38,7 +38,8 @@ object OrderRepository {
                 totalPrice = orderRow[Order.totalPrice],
                 clientName = clientName,
                 placedByStaff = orderRow[Order.isPlacedByStaff],
-                orderitems = items
+                orderitems = items,
+                createdAt = orderRow[Order.createdAt].toString() // ISO 8601 string
             )
         }
     }
@@ -96,5 +97,23 @@ object OrderRepository {
             Group.select { Group.id eq groupId }.singleOrNull()?.get(Group.discount) ?: 0.0f
         } else 0.0f
     }
-}
 
+    // Voeg checkoutOrder toe aan object OrderRepository
+    fun checkoutOrder(orderId: Int): Boolean = transaction {
+        val orderRow = Order.select { Order.id eq orderId }.singleOrNull() ?: return@transaction false
+        val betaaldStatusId = Status.select { Status.name eq "betaald" }.singleOrNull()?.get(Status.id) ?: return@transaction false
+        val updated = Order.update({ Order.id eq orderId }) {
+            it[Order.statusId] = betaaldStatusId
+        }
+        updated > 0
+    }
+
+    fun setInBehandeling(orderId: Int): Boolean = transaction {
+        val orderRow = Order.select { Order.id eq orderId }.singleOrNull() ?: return@transaction false
+        val behandelingStatusId = Status.select { Status.name eq "in behandeling" }.singleOrNull()?.get(Status.id) ?: return@transaction false
+        val updated = Order.update({ Order.id eq orderId }) {
+            it[Order.statusId] = behandelingStatusId
+        }
+        updated > 0
+    }
+}

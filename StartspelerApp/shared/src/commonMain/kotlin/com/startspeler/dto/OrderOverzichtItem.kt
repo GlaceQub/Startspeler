@@ -10,5 +10,6 @@ data class OrderOverzichtItem(
     val totalPrice: Float,
     val clientName: String,
     val placedByStaff: Boolean,
-    val orderitems: List<OverzichtOrderitem>
+    val orderitems: List<OverzichtOrderitem>,
+    val createdAt: String? = null // ISO 8601 string, nullable for backward compatibility
 )

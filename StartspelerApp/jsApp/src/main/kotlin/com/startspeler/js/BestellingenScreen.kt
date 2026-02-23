@@ -24,27 +24,32 @@ val BestellingenScreen = FC<Props> {
 
     val handleFilterChange: (String) -> Unit = { setFilter(it) }
 
+    suspend fun fetchOrders() {
+        setLoading(true)
+        setError(null)
+        try {
+            val configResponse = window.fetch("/config.json").await()
+            val config = configResponse.json().await().asDynamic()
+            val backendUrl = config.backendUrl as? String ?: ""
+            val response = window.fetch("$backendUrl/order/all").await()
+            if (response.ok) {
+                val json = Json { ignoreUnknownKeys = true }
+                val text = response.text().await()
+                val parsed = json.decodeFromString<List<OrderOverzichtItem>>(text)
+                setOrders(parsed)
+            } else {
+                setError("Fout bij ophalen orders: ${response.status}")
+            }
+        } catch (e: Throwable) {
+            setError("Fout: ${e.message}")
+        } finally {
+            setLoading(false)
+        }
+    }
+
     useEffectOnce {
         MainScope().launch {
-            try {
-                val configResponse = window.fetch("/config.json").await()
-                val config = configResponse.json().await().asDynamic()
-                val backendUrl = config.backendUrl as? String ?: ""
-
-                val response = window.fetch("$backendUrl/order/all").await()
-                if (response.ok) {
-                    val json = Json { ignoreUnknownKeys = true }
-                    val text = response.text().await()
-                    val parsed = json.decodeFromString<List<OrderOverzichtItem>>(text)
-                    setOrders(parsed)
-                } else {
-                    setError("Fout bij ophalen orders: ${response.status}")
-                }
-            } catch (e: Throwable) {
-                setError("Fout: ${e.message}")
-            } finally {
-                setLoading(false)
-            }
+            fetchOrders()
         }
     }
 
@@ -57,5 +62,6 @@ val BestellingenScreen = FC<Props> {
         this.statusOptions = statusOptions
         this.selectedStatuses = selectedStatuses
         this.onStatusChange = handleStatusChange
+        this.onCheckoutSuccess = { MainScope().launch { fetchOrders() } }
     }
 }
