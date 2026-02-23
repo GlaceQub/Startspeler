@@ -1,12 +1,15 @@
 package com.startspeler.js
 
+import com.startspeler.dto.CategoryDto
+import com.startspeler.dto.InventoryDto
+import com.startspeler.dto.ProductMinDto
+import com.startspeler.dto.InventoryUpdateRequest
 import com.startspeler.ui.InventoryPage
 import com.startspeler.ui.InventoryView
 import kotlinx.browser.window
 import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.await
 import kotlinx.coroutines.launch
-import kotlinx.serialization.Serializable
 import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.encodeToString
 import kotlinx.serialization.json.Json
@@ -21,27 +24,6 @@ import react.useState
 private val scope = MainScope()
 private val json = Json { ignoreUnknownKeys = true }
 
-@Serializable
-data class InventoryDto(
-    val id: Int,
-    val productId: Int,
-    val quantity: Int,
-    val minimumQuantity: Int? = null,
-    val lastUpdated: String? = null
-)
-
-@Serializable
-data class ProductMinDto(
-    val id: Int,
-    val name: String? = null
-)
-
-@Serializable
-data class InventoryUpdateRequest(
-    val quantity: Int,
-    val minimumQuantity: Int? = null
-)
-
 external interface InventoryScreenProps : Props
 
 val InventoryScreen = FC<InventoryScreenProps> {
@@ -54,6 +36,7 @@ val InventoryScreen = FC<InventoryScreenProps> {
     val (error, setError) = useState<String?>(null)
     val (snackbarOpen, setSnackbarOpen) = useState(false)
     val (snackbarMsg, setSnackbarMsg) = useState("")
+    val (categories, setCategories) = useState<List<CategoryDto>>(emptyList())
 
     useEffectOnce {
         window.fetch("/config.json")
@@ -97,6 +80,16 @@ val InventoryScreen = FC<InventoryScreenProps> {
                 } else {
                     setProducts(emptyList())
                 }
+
+                val catResp = window.fetch(backendUrl.trimEnd('/') + "/categories").await()
+                val catText = catResp.text().await()
+                console.log("GET /categories status:", catResp.status, catResp.statusText)
+                if (catResp.ok) {
+                    val catList = json.decodeFromString(ListSerializer(CategoryDto.serializer()), catText)
+                    setCategories(catList)
+                } else {
+                    setCategories(emptyList())
+                }
             } catch (e: Throwable) {
                 console.error("Fout bij het ophalen van inventory:", e)
                 setError("Fout bij het ophalen van inventory: $e")
@@ -106,18 +99,27 @@ val InventoryScreen = FC<InventoryScreenProps> {
         }
     }
 
-    useEffect(dependencies = arrayOf(inventoryItems, products)) {
+    useEffect(dependencies = arrayOf(inventoryItems, products, categories)) {
         val prodMap = products.associateBy { it.id }
+        val catMap = categories.associateBy { it.id }
+
         val viewList = inventoryItems.map { inv ->
+            val p = prodMap[inv.productId]
+            val catId = p?.categoryId
+            val catName = catId?.let { catMap[it]?.name }
+
             val obj: dynamic = js("{}")
             obj.id = inv.id
             obj.productId = inv.productId
-            obj.productName = prodMap[inv.productId]?.name ?: "Product #${inv.productId}"
+            obj.productName = p?.name ?: "Product #${inv.productId}"
+            obj.categoryId = catId
+            obj.categoryName = catName ?: (if (catId != null) "Categorie #$catId" else "Geen categorie")
             obj.quantity = inv.quantity
             obj.minimumQuantity = inv.minimumQuantity
             obj.lastUpdated = inv.lastUpdated
             obj
         }
+
         setMerged(viewList)
     }
 
@@ -139,7 +141,6 @@ val InventoryScreen = FC<InventoryScreenProps> {
                         )
                         val newQty = inputQty?.toIntOrNull()
                         if (inputQty == null) {
-                            // geannuleerd
                         } else if (newQty == null || newQty < 0) {
                             setSnackbarMsg("Voer een geldige voorraad (>= 0) in.")
                             setSnackbarOpen(true)

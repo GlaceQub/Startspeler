@@ -11,6 +11,7 @@ import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.transactions.transaction
 import db.tables.Inventory as InventoryTable
 
+
 @Serializable
 data class InventoryDto(
     val id: Int,

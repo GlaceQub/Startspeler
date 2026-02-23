@@ -3,6 +3,8 @@ package startspeler.server.repository
 import com.startspeler.dto.ProductItem
 import com.startspeler.models.Product
 import org.jetbrains.exposed.sql.*
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.neq
 import org.jetbrains.exposed.sql.transactions.transaction
 import db.tables.Product as ProductTable
 import db.tables.Inventory as InventoryTable
@@ -79,6 +81,46 @@ object ProductRepository {
                     popularity = it[ProductTable.popularity]
                 )
             }
+    }
+
+    fun create(name: String, categoryId: Int, price: Float, popularity: Int = 0): Product = transaction {
+        val stmt = ProductTable.insert { row ->
+            row[ProductTable.name] = name
+            row[ProductTable.categoryId] = categoryId
+            row[ProductTable.price] = price
+            row[ProductTable.popularity] = popularity
+        }
+
+        val newId = stmt[ProductTable.id]
+
+        Product(
+            id = newId,
+            name = name,
+            categoryId = categoryId,
+            price = price,
+            popularity = popularity
+        )
+    }
+
+    fun update(id: Int, name: String, categoryId: Int, price: Float, popularity: Int = 0): Product? = transaction {
+        val updated = ProductTable.update({ ProductTable.id eq id }) { row ->
+            row[ProductTable.name] = name
+            row[ProductTable.categoryId] = categoryId
+            row[ProductTable.price] = price
+            row[ProductTable.popularity] = popularity
+        }
+        if (updated == 0) null
+        else Product(id = id, name = name, categoryId = categoryId, price = price, popularity = popularity)
+    }
+
+    fun delete(id: Int): Boolean = transaction {
+        ProductTable.deleteWhere { ProductTable.id eq id } > 0
+    }
+
+    fun existsByNameAndCategory(name: String, categoryId: Int, excludeId: Int? = null): Boolean = transaction {
+        val base = (ProductTable.name eq name) and (ProductTable.categoryId eq categoryId)
+        val cond = if (excludeId == null) base else base and (ProductTable.id neq excludeId)
+        ProductTable.select { cond }.limit(1).any()
     }
 
 }
