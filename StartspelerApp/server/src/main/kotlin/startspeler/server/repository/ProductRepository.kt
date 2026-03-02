@@ -36,14 +36,15 @@ object ProductRepository {
 
     fun getAllByCategoryWithStock(categoryId: Int): List<ProductItem> = transaction {
         (ProductTable innerJoin InventoryTable).select { ProductTable.categoryId eq categoryId }.map { row ->
-                val quantity = row.getOrNull(InventoryTable.quantity)
-                ProductItem(
-                    id = row[ProductTable.id],
-                    name = row[ProductTable.name],
-                    price = row[ProductTable.price],
-                    outOfStock = (quantity == null || quantity <= 0)
-                )
-            }
+            val quantity = row.getOrNull(InventoryTable.quantity) ?: 0
+            ProductItem(
+                id = row[ProductTable.id],
+                name = row[ProductTable.name],
+                price = row[ProductTable.price],
+                outOfStock = quantity <= 0,
+                stockQuantity = quantity
+            )
+        }
     }
 
     fun getById(id: Int): Product? = transaction {

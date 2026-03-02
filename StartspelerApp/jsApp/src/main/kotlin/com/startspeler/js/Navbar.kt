@@ -29,7 +29,7 @@ val Navbar = FC<NavBarProps> { props ->
         )
 
         Toolbar {
-            ReactHTML.span{
+            ReactHTML.span {
                 asDynamic().className = "logo"
 
                 ReactHTML.img {
@@ -75,16 +75,31 @@ val Navbar = FC<NavBarProps> { props ->
                 }
 
                 // Inventory knop (optioneel, alleen zichtbaar voor ingelogde gebruikers)
-                Button {
-                    onClick = { _ -> window.location.hash = "/inventory" }
-                    variant = ButtonVariant.contained
-                    disableElevation = true
-                    val cls = if (current == "inventory") "nav-button active" else "nav-button"
-                    asDynamic().className = cls
-                    if (current == "inventory") asDynamic().ariaCurrent = "page"
-                    +"Inventory"
+                if (isLoggedIn) {
+                    Button {
+                        onClick = { _ -> window.location.hash = "/inventory" }
+                        variant = ButtonVariant.contained
+                        disableElevation = true
+                        val cls = if (current == "inventory") "nav-button active" else "nav-button"
+                        asDynamic().className = cls
+                        if (current == "inventory") asDynamic().ariaCurrent = "page"
+                        +"Stock"
+                    }
+                }
+
+                // Bestellingen knop (optioneel, alleen zichtbaar voor ingelogde gebruikers)
+                if (isLoggedIn) {
+                    Button {
+                        onClick = { _ -> window.location.hash = "#/bestellingen" }
+                        variant = ButtonVariant.contained
+                        disableElevation = true
+                        val cls = if (current == "bestellingen") "nav-button active" else "nav-button"
+                        asDynamic().className = cls
+                        if (current == "bestellingen") asDynamic().ariaCurrent = "page"
+                        +"Bestellingen"
+                    }
+                }
             }
         }
     }
-}
 }
