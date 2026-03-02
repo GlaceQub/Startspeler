@@ -1,5 +1,7 @@
 package startspeler.server.routes
 
+import com.startspeler.server.repository.TafelRepository
+import com.startspeler.tables.dto.Table
 import io.ktor.server.application.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
@@ -15,6 +17,20 @@ fun Routing.tafelRoutes() {
                 TableModel.selectAll().map { "Tafel ${it[TableModel.number]}" }
             }
             call.respond(tafels)
+        }
+
+        get("/all") {
+            val result: List<Table> = transaction {
+                TafelRepository.getAll().map { t ->
+                    Table(
+                        id = t.id,
+                        number = t.number,
+                        statusId = t.statusId,
+                        statusName = t.statusName
+                    )
+                }
+            }
+            call.respond(result)
         }
     }
 }

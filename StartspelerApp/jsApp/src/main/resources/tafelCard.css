@@ -1,0 +1,49 @@
+.tafelGrid {
+  margin-top: 16px;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+  gap: 16px;
+}
+
+.tafelCard {
+  cursor: pointer;
+  user-select: none;
+  border-radius: 18px;
+  color: #fff;
+  padding: 16px;
+  transition: transform 120ms ease, filter 120ms ease;
+}
+
+.tafelCard:hover {
+  transform: translateY(-2px);
+  filter: brightness(1.03);
+}
+
+.tafelCardTitle {
+  font-size: 1.35rem;
+  font-weight: 900;
+  line-height: 1.1;
+  margin: 0;
+}
+
+.tafelCardStatus {
+  margin-top: 6px;
+  font-size: 0.95rem;
+  font-weight: 700;
+  opacity: 0.95;
+}
+
+
+.tafelCard--active {
+  background-color: var(--startspeler-primary) !important;
+}
+
+.tafelCard--inactive {
+  background-color: var(--startspeler-secondary) !important;
+}
+
+/* Optional: a slightly "disabled" feel for inactive */
+.tafelCard--inactive.tafelCard {
+  color: rgba(255, 255, 255, 0.92);
+  filter: saturate(0.95);
+}
