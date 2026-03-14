@@ -125,11 +125,6 @@ val InventoryPage = FC<InventoryPageProps> { props ->
                                                 asDynamic().onClick = { e: dynamic -> e.stopPropagation(); props.onEdit(inv) }
                                                 Edit()
                                             }
-                                            IconButton {
-                                                asDynamic().className = "inventoryAction"
-                                                asDynamic().onClick = { e: dynamic -> e.stopPropagation(); props.onDelete(inv) }
-                                                Delete()
-                                            }
                                         }
                                     }
                                     Divider {}
@@ -163,7 +158,6 @@ val InventoryPage = FC<InventoryPageProps> { props ->
                     Box {
                         sx = js("{ display: 'flex', gap: 8, marginTop: 12 }")
                         Button { asDynamic().className = "inventoryPrimaryBtn"; asDynamic().onClick = { props.onEdit(selected) }; +"Bewerk" }
-                        Button { variant = ButtonVariant.outlined; asDynamic().onClick = { props.onDelete(selected) }; +"Verwijder" }
                     }
                 }
             }
