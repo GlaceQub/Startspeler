@@ -1,119 +1,80 @@
 package startspeler.server.routes
 
+import io.ktor.http.*
 import io.ktor.server.application.*
+import io.ktor.server.auth.*
+import io.ktor.server.auth.jwt.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import io.ktor.http.*
 import kotlinx.serialization.Serializable
-import org.jetbrains.exposed.sql.transactions.transaction
-import db.tables.Order
-import db.tables.Orderitem
-import db.tables.User
-import db.tables.TableModel
-import org.jetbrains.exposed.sql.insert
-import org.jetbrains.exposed.sql.select
-import org.jetbrains.exposed.sql.update
-import kotlinx.datetime.Clock
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
-import io.ktor.server.auth.*
-import io.ktor.server.auth.jwt.*
-import db.tables.Role
-import db.tables.Product
-import db.tables.Group
-
-
-@Serializable
-data class OrderItemRequest(val productId: Int, val quantity: Int, val price: Float)
+import startspeler.server.repository.OrderRepository
+import com.startspeler.dto.OrderItemRequest
 
 @Serializable
 data class PlaceOrderRequest(val klant: String, val tafel: String, val items: List<OrderItemRequest>)
 
 fun Routing.orderRoutes() {
     route("/order") {
+
+        get("/all") {
+            val from = call.request.queryParameters["from"]
+            val to = call.request.queryParameters["to"]
+            val orders = OrderRepository.getAll(from, to)
+            call.respond(orders)
+        }
+
         post("/add") {
             val req = call.receive<PlaceOrderRequest>()
-            // Find userId by klant name
-            val userId = transaction {
-                User.select { User.name eq req.klant }.singleOrNull()?.get(User.id)
-            }
-            if (userId == null) {
-                call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Klant niet gevonden"))
-                return@post
-            }
-            // Find tableId by tafel string (e.g. "Tafel 1" -> 1)
+
+            val userId = OrderRepository.getUserIdByName(req.klant)
+                ?: return@post call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Klant niet gevonden"))
+
             val tafelNum = req.tafel.filter { it.isDigit() }.toIntOrNull()
-            val tableId = if (tafelNum != null) transaction {
-                TableModel.select { TableModel.number eq tafelNum }.singleOrNull()?.get(TableModel.id)
-            } else null
-            if (tableId == null) {
-                call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Tafel niet gevonden"))
-                return@post
-            }
-            // Calculate total price
+                ?: return@post call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Ongeldig tafelnummer"))
+
+            val tableId = OrderRepository.getTableIdByNumber(tafelNum)
+                ?: return@post call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Tafel niet gevonden"))
+
             val totalPrice = req.items.sumOf { it.price.toDouble() * it.quantity.toDouble() }.toFloat()
 
-            // Retrieve group discount
-            val groupDiscount = transaction {
-                val userRow = User.select { User.id eq userId }.singleOrNull()
-                val groupId = userRow?.get(User.groupId)
-                if (groupId != null) {
-                    Group.select { Group.id eq groupId }.singleOrNull()?.get(Group.discount) ?: 0.0f
-                } else {
-                    0.0f
-                }
-            }
+            val groupDiscount = OrderRepository.getGroupDiscount(userId)
             val priceAfterDiscount = if (groupDiscount > 0.0f) {
                 totalPrice * (1.0f - groupDiscount / 100.0f)
             } else totalPrice
-            val now = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
 
-            // Determine if placed by staff
             val principal = call.principal<JWTPrincipal>()
-            var isPlacedByStaff = false // Default: not placed by staff
-            if (principal != null) {
-                val username = principal.payload.getClaim("username").asString()
-                val klantRoleName = "klant"
-                val userRole = transaction {
-                    User.innerJoin(Role).select { User.name eq username }.singleOrNull()?.get(Role.name)
-                }
-                if (userRole != null && !userRole.equals(klantRoleName, ignoreCase = true)) {
-                    isPlacedByStaff = true
-                }
-            }
+            val isPlacedByStaff = principal != null
 
-            // Insert order
-            val orderId = transaction {
-                Order.insert {
-                    it[Order.userId] = userId
-                    it[Order.tableId] = tableId
-                    it[Order.statusId] = 5
-                    it[Order.totalPrice] = totalPrice
-                    it[Order.priceAfterDiscount] = priceAfterDiscount
-                    it[Order.createdAt] = now
-                    it[Order.isPlacedByStaff] = isPlacedByStaff
-                    it[Order.remarks] = null
-                } get Order.id
+            val orderId = OrderRepository.add(userId, tableId, totalPrice, priceAfterDiscount, isPlacedByStaff, req.items)
+            when (orderId) {
+                is OrderRepository.AddResult.Success ->
+                    call.respond(HttpStatusCode.Created, mapOf("orderId" to orderId.orderId))
+                is OrderRepository.AddResult.InsufficientStock ->
+                    call.respond(HttpStatusCode.Conflict, mapOf("error" to "insufficient_stock", "products" to orderId.productNames))
             }
-            // Insert order items and update product popularity
-            transaction {
-                req.items.forEach { item ->
-                    Orderitem.insert {
-                        it[Orderitem.orderId] = orderId
-                        it[Orderitem.productId] = item.productId
-                        it[Orderitem.quantity] = item.quantity
-                        it[Orderitem.price] = item.price
-                    }
-                    // Update product popularity
-                    val currentPopularity = Product.select { Product.id eq item.productId }
-                        .singleOrNull()?.get(Product.popularity) ?: 0
-                    Product.update({ Product.id eq item.productId }) {
-                        it[Product.popularity] = currentPopularity + item.quantity
-                    }
-                }
+        }
+
+        post("/{id}/checkout") {
+            val id = call.parameters["id"]?.toIntOrNull()
+                ?: return@post call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Ongeldige order id"))
+            val updated = OrderRepository.checkoutOrder(id)
+            if (updated) {
+                call.respond(HttpStatusCode.OK, mapOf("success" to true))
+            } else {
+                call.respond(HttpStatusCode.NotFound, mapOf("error" to "Order niet gevonden of niet bijgewerkt"))
             }
-            call.respond(HttpStatusCode.Created, mapOf("orderId" to orderId))
+        }
+
+        post("/{id}/inbehandeling") {
+            val id = call.parameters["id"]?.toIntOrNull()
+                ?: return@post call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Ongeldige order id"))
+            val updated = OrderRepository.setInBehandeling(id)
+            if (updated) {
+                call.respond(HttpStatusCode.OK, mapOf("success" to true))
+            } else {
+                call.respond(HttpStatusCode.NotFound, mapOf("error" to "Order niet gevonden of niet bijgewerkt"))
+            }
         }
     }
 }

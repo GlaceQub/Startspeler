@@ -85,6 +85,8 @@ private val App = FC<Props> {
                         // You can pass loggedIn here if BestelScreen needs it
                     }
 
+                    "bestellingen" -> BestellingenScreen {}
+
                     "inventory" -> InventoryScreen {
 
                     }

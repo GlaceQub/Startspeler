@@ -38,6 +38,42 @@ val ProductPage = FC<ProductPageProps> { props ->
     var priceStr by useState("")
     var popularityStr by useState("0")
 
+    // sort/filter
+    var sortKey by useState("name") // "name" | "price" | "popularity"
+    var sortDir by useState("asc")  // "asc" | "desc"
+    var selectedCategory by useState<String?>(null)
+
+    // category dropdown state
+    var categoryDropdownOpen by useState(false)
+
+    val toggleSort: (String) -> Unit = { key ->
+        if (sortKey == key) sortDir = if (sortDir == "asc") "desc" else "asc"
+        else {
+            sortKey = key
+            sortDir = "asc"
+        }
+    }
+
+    val sortIndicator: (String) -> String = { key ->
+        if (sortKey != key) "" else if (sortDir == "asc") " ▲" else " ▼"
+    }
+
+    val categoriesDistinct = props.items.map { it.categoryName }.distinct().sorted()
+
+    val visibleItems = props.items
+        .asSequence()
+        .filter { selectedCategory == null || it.categoryName == selectedCategory }
+        .sortedWith { a, b ->
+            val cmp = when (sortKey) {
+                "name" -> a.name.lowercase().compareTo(b.name.lowercase())
+                "price" -> a.price.compareTo(b.price)
+                "popularity" -> a.popularity.compareTo(b.popularity)
+                else -> 0
+            }
+            if (sortDir == "asc") cmp else -cmp
+        }
+        .toList()
+
     val openNew = {
         editingId = null
         name = ""
@@ -57,38 +93,16 @@ val ProductPage = FC<ProductPageProps> { props ->
     }
 
     Box {
-        sx = js(
-            """
-            ({
-              width: "100vw",
-              minHeight: "calc(100vh - 60px)",
-              display: "flex",
-              justifyContent: "center",
-              alignItems: "flex-start",
-              pt: 3,
-              pb: 4,
-              boxSizing: "border-box"
-            })
-            """
-        )
+        sx = js("{ width: '100vw', minHeight: 'calc(100vh - 60px)', display: 'flex', justifyContent: 'center', alignItems: 'flex-start', pt: 3, pb: 4, boxSizing: 'border-box' }")
+
         Box {
-            sx = js(
-                """
-                ({
-                  width: "100%",
-                  maxWidth: "none",
-                  px: 3,      
-                  boxSizing: "border-box"
-                })
-                """
-            )
+            sx = js("{ width: '100%', maxWidth: 'none', px: 3, boxSizing: 'border-box' }")
 
             Box {
                 sx = js("{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: 2 }")
                 Typography { asDynamic().variant = "h6"; +"Product beheer" }
                 Button {
-                    sx =
-                        js("{ marginTop: 'auto', marginTop: '16px', backgroundColor: 'var(--startspeler-primary)', color: 'white', fontWeight: 700, borderRadius: '20px' }")
+                    sx = js("{ mt: 2, backgroundColor: 'var(--startspeler-primary)', color: 'white', fontWeight: 700, borderRadius: '20px', boxShadow: 'none', '&:hover': { backgroundColor: '#22356a', boxShadow: 'none' } }")
                     variant = ButtonVariant.contained
                     asDynamic().onClick = { openNew() }
                     +"Nieuw product"
@@ -103,21 +117,92 @@ val ProductPage = FC<ProductPageProps> { props ->
                 TableContainer {
                     component = Paper
                     sx = js("{ width: '100%' }")
+
                     Table {
                         size = Size.medium
-                        sx = js("{ '& th, & td': { fontSize: '1rem', py: 1.5 } }")
+                        sx = js("{ tableLayout: 'fixed', width: '100%', '& th, & td': { fontSize: '1rem', py: 1.5 } }")
+
                         TableHead {
                             TableRow {
                                 TableCell { +"ID" }
-                                TableCell { +"Naam" }
-                                TableCell { +"Categorie" }
-                                TableCell { +"Prijs" }
-                                TableCell { +"Populariteit" }
+
+                                TableCell {
+                                    ButtonBase {
+                                        sx = js("{ width: '100%', justifyContent: 'flex-start', fontWeight: 800 }")
+                                        asDynamic().onClick = { toggleSort("name") }
+                                        Typography { +"Naam${sortIndicator("name")}" }
+                                    }
+                                }
+
+                                // Category header: absolute dropdown over the table (no header height changes)
+                                TableCell {
+                                    Box {
+                                        sx = js("{ position: 'relative', display: 'inline-flex', alignItems: 'center', gap: '6px' }")
+
+                                        Typography { +"Categorie" }
+
+                                        IconButton {
+                                            size = Size.small
+                                            sx = js("{ p: '4px' }")
+                                            asDynamic().onClick = { categoryDropdownOpen = !categoryDropdownOpen }
+                                            +"▾"
+                                        }
+
+                                        if (categoryDropdownOpen) {
+                                            Paper {
+                                                elevation = 6
+                                                sx = js("{ position: 'absolute', top: 'calc(100% + 8px)', left: 0, zIndex: 2000, minWidth: '180px', borderRadius: '12px', overflow: 'hidden' }")
+
+                                                MenuList {
+                                                    MenuItem {
+                                                        key = "all"
+                                                        asDynamic().selected = selectedCategory == null
+                                                        asDynamic().onClick = {
+                                                            selectedCategory = null
+                                                            categoryDropdownOpen = false
+                                                        }
+                                                        +"Alle"
+                                                    }
+
+                                                    categoriesDistinct.forEach { cat ->
+                                                        MenuItem {
+                                                            key = cat
+                                                            asDynamic().selected = selectedCategory == cat
+                                                            asDynamic().onClick = {
+                                                                selectedCategory = cat
+                                                                categoryDropdownOpen = false
+                                                            }
+                                                            +cat
+                                                        }
+                                                    }
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+
+                                TableCell {
+                                    ButtonBase {
+                                        sx = js("{ width: '100%', justifyContent: 'flex-start', fontWeight: 800 }")
+                                        asDynamic().onClick = { toggleSort("price") }
+                                        Typography { +"Prijs${sortIndicator("price")}" }
+                                    }
+                                }
+
+                                TableCell {
+                                    ButtonBase {
+                                        sx = js("{ width: '100%', justifyContent: 'flex-start', fontWeight: 800 }")
+                                        asDynamic().onClick = { toggleSort("popularity") }
+                                        Typography { +"Populariteit${sortIndicator("popularity")}" }
+                                    }
+                                }
+
                                 TableCell { +"Acties" }
                             }
                         }
+
                         TableBody {
-                            props.items.forEach { p ->
+                            visibleItems.forEach { p ->
                                 TableRow {
                                     key = p.id.toString()
                                     TableCell { +p.id.toString() }
@@ -164,24 +249,12 @@ val ProductPage = FC<ProductPageProps> { props ->
 
                 DialogContent {
                     Box {
-                        sx = js(
-                         """
-                            ({
-                              display: "flex",
-                              flexDirection: "column",
-                              gap: 2,        // MUI spacing units (2 = 16px)
-                              mt: 1,
-                              minWidth: 360
-                            })
-                            """
-                        )
+                        sx = js("({ display: 'flex', flexDirection: 'column', gap: 2, mt: 1, minWidth: 360 })")
 
                         TextField {
                             asDynamic().label = "Naam"
                             asDynamic().value = name
-                            asDynamic().onChange = { e: dynamic ->
-                                name = (e.target as HTMLInputElement).value
-                            }
+                            asDynamic().onChange = { e: dynamic -> name = (e.target as HTMLInputElement).value }
                             asDynamic().fullWidth = true
                         }
 
@@ -206,18 +279,14 @@ val ProductPage = FC<ProductPageProps> { props ->
                         TextField {
                             asDynamic().label = "Prijs"
                             asDynamic().value = priceStr
-                            asDynamic().onChange = { e: dynamic ->
-                                priceStr = (e.target as HTMLInputElement).value
-                            }
+                            asDynamic().onChange = { e: dynamic -> priceStr = (e.target as HTMLInputElement).value }
                             asDynamic().fullWidth = true
                         }
 
                         TextField {
                             asDynamic().label = "Populariteit"
                             asDynamic().value = popularityStr
-                            asDynamic().onChange = { e: dynamic ->
-                                popularityStr = (e.target as HTMLInputElement).value
-                            }
+                            asDynamic().onChange = { e: dynamic -> popularityStr = (e.target as HTMLInputElement).value }
                             asDynamic().fullWidth = true
                         }
                     }
@@ -246,11 +315,8 @@ val ProductPage = FC<ProductPageProps> { props ->
                                     window.alert("Vul Naam, Categorie en Prijs correct in.")
                                 } else {
                                     val id = editingId
-                                    if (id == null) {
-                                        props.onAdd(name.trim(), catId, price, pop)
-                                    } else {
-                                        props.onEdit(id, name.trim(), catId, price, pop)
-                                    }
+                                    if (id == null) props.onAdd(name.trim(), catId, price, pop)
+                                    else props.onEdit(id, name.trim(), catId, price, pop)
                                     dialogOpen = false
                                 }
                             }
