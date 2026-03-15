@@ -3,6 +3,7 @@ package com.startspeler.js
 import com.startspeler.ui.BestelPage
 import com.startspeler.ui.UserCreateScreen
 import com.startspeler.js.Navbar
+import com.startspeler.ui.TafelPage
 import kotlinx.browser.window
 import mui.material.Box
 import mui.material.CircularProgress
@@ -95,6 +96,10 @@ private val App = FC<Props> {
                     }
 
                     "product" -> ProductScreen {
+
+                    }
+
+                    "tables" -> TafelScreen {
 
                     }
 
