@@ -1,5 +1,7 @@
 package com.startspeler.js
 
+import com.startspeler.tables.dto.TafelCreate
+import com.startspeler.tables.dto.TafelUpdate
 import com.startspeler.ui.TafelPage
 import com.startspeler.ui.TafelView
 import kotlinx.browser.window
@@ -30,7 +32,6 @@ data class TafelDto(
     val statusId: Int,
     val statusName: String
 )
-
 @Serializable
 data class TafelStatusUpdateDto(val statusId: Int)
 
@@ -41,16 +42,9 @@ val TafelScreen = FC<TafelScreenProps> {
 
     val (tafels, setTafels) = useState<List<TafelDto>>(emptyList())
 
-    // snackbar for feedback (zoals BestelScreen)
     val (snackbarOpen, setSnackbarOpen) = useState(false)
     val (snackbarMsg, setSnackbarMsg) = useState("")
     val (snackbarSeverity, setSnackbarSeverity) = useState("info") // "success" | "error" | "info"
-
-    fun showToast(msg: String, severity: String = "info") {
-        setSnackbarMsg(msg)
-        setSnackbarSeverity(severity)
-        setSnackbarOpen(true)
-    }
 
     fun loadTafels(url: String) {
         setLoading(true)
@@ -73,7 +67,6 @@ val TafelScreen = FC<TafelScreenProps> {
         }
     }
 
-    // Load backendUrl from config.json on mount (zelfde als BestelScreen/InventoryScreen)
     useEffectOnce {
         window.fetch("/config.json")
             .then { response ->
@@ -91,7 +84,6 @@ val TafelScreen = FC<TafelScreenProps> {
             }
     }
 
-    // Fetch tafels when backendUrl loaded
     useEffect(dependencies = arrayOf(backendUrl)) {
         val url = backendUrl ?: return@useEffect
         loadTafels(url)
@@ -108,44 +100,118 @@ val TafelScreen = FC<TafelScreenProps> {
         return obj.unsafeCast<TafelView>()
     }
 
-    val handleToggleActive: (Int, Boolean) -> Unit = { id, newActive ->
-        val url = backendUrl
-        if (url == null) {
-            showToast("Backend URL niet geladen", "error")
-        }else{
+    val handleToggleActive: (Int, Boolean) -> Unit = toggle@{ id, newActive ->
+        val url = backendUrl ?: run {
+            setSnackbarMsg("Backend URL niet geladen")
+            setSnackbarSeverity("error")
+            setSnackbarOpen(true)
+            return@toggle
+        }
+
+        val tafel = tafels.firstOrNull { it.id == id } ?: run {
+            setSnackbarMsg("Tafel niet gevonden")
+            setSnackbarSeverity("error")
+            setSnackbarOpen(true)
+            return@toggle
+        }
 
         val newStatusId = if (newActive) activeStatusId else inactiveStatusId
 
         scope.launch {
             try {
-                val endpoint = url.trimEnd('/') + "/tafels/$id/status"
+                val endpoint = url.trimEnd('/') + "/tafels/$id"
                 val init: dynamic = js("{}")
-                init.method = "PATCH"
+                init.method = "PUT"
                 init.headers = js("{ 'Content-Type': 'application/json' }")
-                init.body = json.encodeToString(TafelStatusUpdateDto(statusId = newStatusId))
+                init.body = json.encodeToString(TafelUpdate(number = tafel.number, statusId = newStatusId))
 
                 val resp = window.fetch(endpoint, init).await()
                 val respText = resp.text().await()
 
                 if (resp.ok) {
-                    val updated = json.decodeFromString(TafelDto.serializer(), respText)
-                    setTafels(tafels.map { if (it.id == updated.id) updated else it })
-                    showToast("Tafel bijgewerkt", "success")
+                    loadTafels(url)
+                    setSnackbarMsg("Tafel bijgewerkt")
+                    setSnackbarSeverity("success")
+                    setSnackbarOpen(true)
                 } else {
-                    showToast("Status wijzigen mislukt: ${resp.status} ${resp.statusText}", "error")
+                    setSnackbarMsg("Bijwerken mislukt: ${resp.status} ${resp.statusText} $respText")
+                    setSnackbarSeverity("error")
+                    setSnackbarOpen(true)
                 }
             } catch (e: Throwable) {
-                showToast("Fout bij status wijzigen: $e", "error")
+                setSnackbarMsg("Fout bij bijwerken: $e")
+                setSnackbarSeverity("error")
+                setSnackbarOpen(true)
             }
         }
     }
+
+
+    val handleAdd: (Int) -> Unit = add@{ number ->
+        val url = backendUrl
+        if (url == null) {
+            setSnackbarMsg("Backend URL niet geladen")
+            setSnackbarSeverity("error")
+            setSnackbarOpen(true)
+            return@add
+        }
+
+        if (number <= 0) {
+            setSnackbarMsg("Tafelnummer moet groter zijn dan 0")
+            setSnackbarSeverity("error")
+            setSnackbarOpen(true)
+            return@add
+        }
+
+        scope.launch {
+            try {
+                val endpoint = url.trimEnd('/') + "/tafels"
+                val init: dynamic = js("{}")
+                init.method = "POST"
+                init.headers = js("{ 'Content-Type': 'application/json' }")
+                init.body = json.encodeToString(TafelCreate(number = number, statusId = inactiveStatusId))
+
+                val resp = window.fetch(endpoint, init).await()
+                val text = resp.text().await()
+
+                if (resp.ok) {
+                    setSnackbarMsg("Tafel toegevoegd")
+                    setSnackbarSeverity("success")
+                    setSnackbarOpen(true)
+                    loadTafels(url)
+                } else {
+                    setSnackbarMsg("Toevoegen mislukt: ${resp.status} ${resp.statusText} $text")
+                    setSnackbarSeverity("error")
+                    setSnackbarOpen(true)
+                }
+            } catch (e: Throwable) {
+                setSnackbarMsg("Fout bij toevoegen: $e")
+                setSnackbarSeverity("error")
+                setSnackbarOpen(true)
+            }
+        }
     }
+
+    val handleDelete: (Int) -> Unit = delete@{ id ->
+        val url = backendUrl ?: return@delete
+        scope.launch {
+            val endpoint = url.trimEnd('/') + "/tafels/$id"
+            val init: dynamic = js("{}")
+            init.method = "DELETE"
+            val resp = window.fetch(endpoint, init).await()
+            if (resp.ok || resp.status.toInt() == 204) loadTafels(url)
+        }
+    }
+
+
 
     TafelPage {
         this.items = tafels.map(::dtoToView)
         this.loading = loading
         this.error = error
         this.onToggleActive = handleToggleActive
+        this.onAdd = handleAdd
+        this.onDelete = handleDelete
     }
 
     Snackbar {
@@ -153,7 +219,6 @@ val TafelScreen = FC<TafelScreenProps> {
         autoHideDuration = 3000
         onClose = { _, _ -> setSnackbarOpen(false) }
         Alert {
-            // severity verwacht dynamic/string in Kotlin wrappers
             asDynamic().severity = snackbarSeverity
             sx = js("{ width: '100%' }")
             +snackbarMsg

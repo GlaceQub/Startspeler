@@ -61,7 +61,7 @@ val ProductPage = FC<ProductPageProps> { props ->
             """
             ({
               width: "100vw",
-              minHeight: "calc(100vh - 60px)",  // 60px = jouw navbar toolbar hoogte (zie CSS)
+              minHeight: "calc(100vh - 60px)",
               display: "flex",
               justifyContent: "center",
               alignItems: "flex-start",

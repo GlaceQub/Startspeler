@@ -71,24 +71,15 @@ object TafelRepository {
             .single()
     }
 
-    fun updateStatus(id: Int, statusId: Int): TableModel? = transaction {
+    fun update(id: Int, number: Int, statusId: Int): TableModel? = transaction {
+        if (existsByNumber(number, excludeId = id)) throw TableAlreadyExistsException("Tafel $number bestaat al.")
+
         val updated = TablesTable.update({ TablesTable.id eq id }) { row ->
+            row[TablesTable.number] = number
             row[TablesTable.statusId] = statusId
         }
-        if (updated == 0) null
-        else {
-            (TablesTable innerJoin StatusTable)
-                .select { TablesTable.id eq id }
-                .map { row ->
-                    TableModel(
-                        id = row[TablesTable.id],
-                        number = row[TablesTable.number],
-                        statusId = row[TablesTable.statusId],
-                        statusName = row[StatusTable.name]
-                    )
-                }
-                .single()
-        }
+
+        if (updated == 0) null else getById(id)
     }
 
     fun delete(id: Int): Boolean = transaction {

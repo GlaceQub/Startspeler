@@ -1,49 +1,87 @@
+.tafelRoot {
+  --tafel-primary: var(--startspeler-primary);
+  --tafel-primary-contrast: var(--startspeler-primary-contrast);
+  --tafel-secondary: var(--startspeler-secondary);
+  --tafel-shadow: var(--startspeler-shadow);
+  --tafel-text: var(--startspeler-text);
+}
+
 .tafelGrid {
-  margin-top: 16px;
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
-  gap: 16px;
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)) !important;
+  gap: 16px !important;
+  margin-top: 16px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
 }
 
 .tafelCard {
-  cursor: pointer;
-  user-select: none;
-  border-radius: 18px;
-  color: #fff;
-  padding: 16px;
-  transition: transform 120ms ease, filter 120ms ease;
+  border-radius: 20px !important;
+  box-shadow: 0 2px 8px var(--tafel-shadow) !important;
+  padding: 8px 16px !important;
+  transition: opacity 0.15s, background-color 0.15s !important;
 }
 
-.tafelCard:hover {
-  transform: translateY(-2px);
-  filter: brightness(1.03);
+.tafelCard:hover,
+.tafelCard:focus {
+  opacity: 0.9 !important;
 }
-
-.tafelCardTitle {
-  font-size: 1.35rem;
-  font-weight: 900;
-  line-height: 1.1;
-  margin: 0;
-}
-
-.tafelCardStatus {
-  margin-top: 6px;
-  font-size: 0.95rem;
-  font-weight: 700;
-  opacity: 0.95;
-}
-
 
 .tafelCard--active {
-  background-color: var(--startspeler-primary) !important;
+  background-color: var(--tafel-primary) !important;
 }
 
 .tafelCard--inactive {
-  background-color: var(--startspeler-secondary) !important;
+  background-color: var(--tafel-secondary) !important;
 }
 
-/* Optional: a slightly "disabled" feel for inactive */
-.tafelCard--inactive.tafelCard {
-  color: rgba(255, 255, 255, 0.92);
-  filter: saturate(0.95);
+.tafelCardTitle {
+  font-weight: 700 !important;
+  margin: 0 !important;
+  color: #ffffff !important;
+  }
+
+.tafelCard--inactive .tafelCardTitle {
+  color: var(--tafel-primary) !important;
+}
+
+.tafelCardStatus {
+  font-weight: 600 !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.tafelCard--inactive .tafelCardStatus {
+  color: rgba(43, 48, 120, 0.85) !important;
+}
+
+.tafelCard .MuiSwitch-root {
+  margin-left: 8px !important;
+}
+
+.tafelCard--active .MuiSwitch-switchBase.Mui-checked {
+  color: var(--tafel-primary-contrast) !important;
+}
+
+.tafelCard--active .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track {
+  background-color: rgba(255, 255, 255, 0.6) !important;
+}
+
+.tafelCard--inactive .MuiSwitch-switchBase.Mui-checked {
+  color: var(--tafel-primary) !important;
+}
+
+.tafelCard--inactive .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track {
+  background-color: rgba(43, 48, 120, 0.35) !important;
+}
+
+.tafelCard .MuiSwitch-track {
+  opacity: 1 !important;
+}
+
+.tafelCardActions .MuiSvgIcon-root {
+  color: var(--tafel-primary-contrast) !important;
+}
+
+.tafelCard--inactive .tafelCardActions .MuiSvgIcon-root {
+  color: var(--tafel-primary) !important;
 }

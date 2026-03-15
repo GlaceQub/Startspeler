@@ -11,14 +11,14 @@ data class Table(
 )
 
 @Serializable
-
 data class TafelCreate(
     val number: Int,
     val statusId: Int
 )
 
 @Serializable
-data class TafelStatusUpdate(
+data class TafelUpdate(
+    val number: Int,
     val statusId: Int
 )
 
