@@ -46,11 +46,13 @@ object OrderRepository {
             val statusName = Status.select { Status.id eq orderRow[Order.statusId] }
                 .singleOrNull()?.get(Status.name) ?: "Onbekend"
             val items = Orderitem.select { Orderitem.orderId eq orderId }.map { itemRow ->
-                val productName = Product.select { Product.id eq itemRow[Orderitem.productId] }
-                    .singleOrNull()?.get(Product.name) ?: "Onbekend"
+                val productRow = Product.select { Product.id eq itemRow[Orderitem.productId] }.singleOrNull()
+                val productName = productRow?.get(Product.name) ?: "Onbekend"
+                val productId = productRow?.get(Product.id) ?: itemRow[Orderitem.productId]
                 OverzichtOrderitem(
                     id = itemRow[Orderitem.id],
                     product = productName,
+                    productId = productId,
                     quantity = itemRow[Orderitem.quantity],
                     price = itemRow[Orderitem.price]
                 )
@@ -153,7 +155,120 @@ object OrderRepository {
         } else 0.0f
     }
 
-    // Voeg checkoutOrder toe aan object OrderRepository
+    fun getById(orderId: Int): OrderOverzichtItem? = transaction {
+        val orderRow = Order.select { Order.id eq orderId }.singleOrNull() ?: return@transaction null
+
+        val createdAt = orderRow[Order.createdAt]
+        val clientName = User.select { User.id eq orderRow[Order.userId] }
+            .singleOrNull()?.get(User.name) ?: "Onbekend"
+        val tableNumber = TableModel.select { TableModel.id eq orderRow[Order.tableId] }
+            .singleOrNull()?.get(TableModel.number) ?: 0
+        val statusName = Status.select { Status.id eq orderRow[Order.statusId] }
+            .singleOrNull()?.get(Status.name) ?: "Onbekend"
+        val items = Orderitem.select { Orderitem.orderId eq orderId }.map { itemRow ->
+            val productRow = Product.select { Product.id eq itemRow[Orderitem.productId] }.singleOrNull()
+            val productName = productRow?.get(Product.name) ?: "Onbekend"
+            val productId = productRow?.get(Product.id) ?: itemRow[Orderitem.productId]
+            OverzichtOrderitem(
+                id = itemRow[Orderitem.id],
+                product = productName,
+                productId = productId,
+                quantity = itemRow[Orderitem.quantity],
+                price = itemRow[Orderitem.price]
+            )
+        }
+        OrderOverzichtItem(
+            id = orderId,
+            tableNumber = tableNumber,
+            status = statusName,
+            totalPrice = orderRow[Order.totalPrice],
+            clientName = clientName,
+            placedByStaff = orderRow[Order.isPlacedByStaff],
+            orderitems = items,
+            createdAt = createdAt.toString()
+        )
+    }
+
+    fun updateOrder(
+        orderId: Int,
+        userId: Int,
+        tableId: Int,
+        totalPrice: Float,
+        priceAfterDiscount: Float,
+        items: List<OrderItemRequest>
+    ): AddResult = transaction {
+        val now = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
+        val existingOrder = Order.select { Order.id eq orderId }.singleOrNull()
+            ?: return@transaction AddResult.InsufficientStock(emptyList())
+
+        val previousItems = Orderitem.select { Orderitem.orderId eq orderId }.toList()
+        val prevByProduct = previousItems.groupBy { it[Orderitem.productId] }
+            .mapValues { entry -> entry.value.sumOf { row -> row[Orderitem.quantity] } }
+
+        val outOfStock = mutableListOf<String>()
+        items.forEach { item ->
+            val currentStock = Inventory.select { Inventory.productId eq item.productId }
+                .singleOrNull()?.get(Inventory.quantity) ?: 0
+            val previousReserved = prevByProduct[item.productId] ?: 0
+            val availableForEdit = currentStock + previousReserved
+            if (availableForEdit < item.quantity) {
+                val productName = Product.select { Product.id eq item.productId }
+                    .singleOrNull()?.get(Product.name) ?: "Onbekend product"
+                outOfStock.add(productName)
+            }
+        }
+        if (outOfStock.isNotEmpty()) {
+            return@transaction AddResult.InsufficientStock(outOfStock)
+        }
+
+        val newByProduct = items.groupBy { it.productId }
+            .mapValues { entry -> entry.value.sumOf { it.quantity } }
+        val allProductIds = (prevByProduct.keys + newByProduct.keys).toSet()
+
+        allProductIds.forEach { productId ->
+            val prevQty = prevByProduct[productId] ?: 0
+            val newQty = newByProduct[productId] ?: 0
+            val delta = newQty - prevQty
+            if (delta != 0) {
+                val currentStock = Inventory.select { Inventory.productId eq productId }
+                    .singleOrNull()?.get(Inventory.quantity) ?: 0
+                val updatedStock = (currentStock - delta).coerceAtLeast(0)
+                Inventory.update({ Inventory.productId eq productId }) {
+                    it[Inventory.quantity] = updatedStock
+                    it[Inventory.lastUpdated] = now
+                }
+                if (delta > 0) {
+                    val currentPopularity = Product.select { Product.id eq productId }
+                        .singleOrNull()?.get(Product.popularity) ?: 0
+                    Product.update({ Product.id eq productId }) {
+                        it[Product.popularity] = currentPopularity + delta
+                    }
+                }
+            }
+        }
+
+        Orderitem.deleteWhere { SqlExpressionBuilder.run { Orderitem.orderId eq orderId } }
+        items.forEach { item ->
+            Orderitem.insert {
+                it[Orderitem.orderId] = orderId
+                it[Orderitem.productId] = item.productId
+                it[Orderitem.quantity] = item.quantity
+                it[Orderitem.price] = item.price
+            }
+        }
+
+        Order.update({ Order.id eq orderId }) {
+            it[Order.userId] = userId
+            it[Order.tableId] = tableId
+            it[Order.totalPrice] = totalPrice
+            it[Order.priceAfterDiscount] = priceAfterDiscount
+            it[Order.isPlacedByStaff] = existingOrder[Order.isPlacedByStaff]
+            it[Order.remarks] = existingOrder[Order.remarks]
+        }
+
+        AddResult.Success(orderId)
+    }
+
     fun checkoutOrder(orderId: Int): Boolean = transaction {
         Order.select { Order.id eq orderId }.singleOrNull() ?: return@transaction false
         val betaaldStatusId = Status.select { Status.name eq "betaald" }.singleOrNull()?.get(Status.id) ?: return@transaction false

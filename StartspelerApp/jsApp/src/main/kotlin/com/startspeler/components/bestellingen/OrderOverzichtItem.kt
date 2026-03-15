@@ -11,6 +11,7 @@ import react.FC
 import react.Props
 import react.create
 import react.useState
+import kotlinx.browser.window
 
 external interface OrderOverzichtItemProps : Props {
     var order: OrderOverzichtItem
@@ -64,7 +65,7 @@ val OrderOverzichtItem = FC<OrderOverzichtItemProps> { props ->
                                 val time = parts[1].substring(0,5)
                                 if (date.size == 3) "$time ${date[2]}-${date[1]}-${date[0]}" else it
                             } else it
-                        } catch (e: Exception) { it }
+                        } catch (_: Exception) { it }
                     } ?: ""
                     +formatted
                 }
@@ -102,7 +103,7 @@ val OrderOverzichtItem = FC<OrderOverzichtItemProps> { props ->
                             variant = mui.material.ButtonVariant.outlined
                             color = mui.material.ButtonColor.primary
                             size = mui.material.Size.small
-                            onClick = { /* Aanpassen logica */ }
+                            onClick = { window.location.hash = "#/bestel/edit/${order.id}" }
                             +"Aanpassen"
                         }
                         mui.material.Button {
