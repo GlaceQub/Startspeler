@@ -1,7 +1,11 @@
 package startspeler.server.repository
 
+import com.startspeler.dto.BulkCheckoutResponse
+import com.startspeler.dto.ClientOpenOrdersSummary
+import com.startspeler.dto.DeleteOrderResponse
 import com.startspeler.dto.OrderOverzichtItem
 import com.startspeler.dto.OrderItemRequest
+import com.startspeler.dto.OrderStatusTransitionResponse
 import com.startspeler.dto.OverzichtOrderitem
 import db.tables.*
 import kotlinx.datetime.Clock
@@ -12,6 +16,72 @@ import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
 
 object OrderRepository {
+    private const val STATUS_IN_BEHANDELING = 3
+    private const val STATUS_BETAALD = 4
+    private const val STATUS_AANGEMAAKT = 5
+    private const val STATUS_AFGELEVERD = 6
+
+    private val statusFlow = listOf(STATUS_AANGEMAAKT, STATUS_IN_BEHANDELING, STATUS_AFGELEVERD, STATUS_BETAALD)
+
+    private fun previousStatusId(statusId: Int): Int? {
+        val index = statusFlow.indexOf(statusId)
+        return if (index > 0) statusFlow[index - 1] else null
+    }
+
+    private fun nextStatusId(statusId: Int): Int? {
+        val index = statusFlow.indexOf(statusId)
+        return if (index >= 0 && index < statusFlow.lastIndex) statusFlow[index + 1] else null
+    }
+
+    private fun statusNameById(statusId: Int): String? =
+        Status.select { Status.id eq statusId }.singleOrNull()?.get(Status.name)
+
+    private fun buildOrderOverviewItem(orderRow: ResultRow): OrderOverzichtItem {
+        val orderId = orderRow[Order.id]
+        val clientName = User.select { User.id eq orderRow[Order.userId] }
+            .singleOrNull()?.get(User.name) ?: "Onbekend"
+        val tableNumber = TableModel.select { TableModel.id eq orderRow[Order.tableId] }
+            .singleOrNull()?.get(TableModel.number) ?: 0
+        val statusId = orderRow[Order.statusId]
+        val statusName = statusNameById(statusId) ?: "Onbekend"
+        val previousStatusId = previousStatusId(statusId)
+        val nextStatusId = nextStatusId(statusId)
+        val items = Orderitem.select { Orderitem.orderId eq orderId }.map { itemRow ->
+            val productRow = Product.select { Product.id eq itemRow[Orderitem.productId] }.singleOrNull()
+            val productName = productRow?.get(Product.name) ?: "Onbekend"
+            val productId = productRow?.get(Product.id) ?: itemRow[Orderitem.productId]
+            OverzichtOrderitem(
+                id = itemRow[Orderitem.id],
+                product = productName,
+                productId = productId,
+                quantity = itemRow[Orderitem.quantity],
+                price = itemRow[Orderitem.price]
+            )
+        }
+
+        val canEdit = statusId == STATUS_AANGEMAAKT
+        val canDelete = statusId != STATUS_BETAALD
+        val canCheckout = statusId == STATUS_AFGELEVERD
+
+        return OrderOverzichtItem(
+            id = orderId,
+            tableNumber = tableNumber,
+            status = statusName,
+            statusId = statusId,
+            canGoToPreviousStatus = previousStatusId != null && statusId != STATUS_BETAALD,
+            canGoToNextStatus = nextStatusId != null && statusId != STATUS_BETAALD,
+            previousStatusLabel = previousStatusId?.let { statusNameById(it) },
+            nextStatusLabel = nextStatusId?.let { statusNameById(it) },
+            canEdit = canEdit,
+            canDelete = canDelete,
+            canCheckout = canCheckout,
+            totalPrice = orderRow[Order.totalPrice],
+            clientName = clientName,
+            placedByStaff = orderRow[Order.isPlacedByStaff],
+            orderitems = items,
+            createdAt = orderRow[Order.createdAt].toString()
+        )
+    }
 
     fun getAll(from: String? = null, to: String? = null): List<OrderOverzichtItem> = transaction {
         // Parseer "yyyy-MM-ddTHH:mm" of "yyyy-MM-ddTHH:mm:ss" naar LocalDateTime
@@ -38,35 +108,7 @@ object OrderRepository {
             if (fromDt != null && createdAt < fromDt) return@mapNotNull null
             if (toDt != null && createdAt > toDt) return@mapNotNull null
 
-            val orderId = orderRow[Order.id]
-            val clientName = User.select { User.id eq orderRow[Order.userId] }
-                .singleOrNull()?.get(User.name) ?: "Onbekend"
-            val tableNumber = TableModel.select { TableModel.id eq orderRow[Order.tableId] }
-                .singleOrNull()?.get(TableModel.number) ?: 0
-            val statusName = Status.select { Status.id eq orderRow[Order.statusId] }
-                .singleOrNull()?.get(Status.name) ?: "Onbekend"
-            val items = Orderitem.select { Orderitem.orderId eq orderId }.map { itemRow ->
-                val productRow = Product.select { Product.id eq itemRow[Orderitem.productId] }.singleOrNull()
-                val productName = productRow?.get(Product.name) ?: "Onbekend"
-                val productId = productRow?.get(Product.id) ?: itemRow[Orderitem.productId]
-                OverzichtOrderitem(
-                    id = itemRow[Orderitem.id],
-                    product = productName,
-                    productId = productId,
-                    quantity = itemRow[Orderitem.quantity],
-                    price = itemRow[Orderitem.price]
-                )
-            }
-            OrderOverzichtItem(
-                id = orderId,
-                tableNumber = tableNumber,
-                status = statusName,
-                totalPrice = orderRow[Order.totalPrice],
-                clientName = clientName,
-                placedByStaff = orderRow[Order.isPlacedByStaff],
-                orderitems = items,
-                createdAt = orderRow[Order.createdAt].toString()
-            )
+            buildOrderOverviewItem(orderRow)
         }
     }
 
@@ -140,55 +182,6 @@ object OrderRepository {
         }
     }
 
-    fun getUserIdByName(name: String): Int? = transaction {
-        User.select { User.name eq name }.singleOrNull()?.get(User.id)
-    }
-
-    fun getTableIdByNumber(number: Int): Int? = transaction {
-        TableModel.select { TableModel.number eq number }.singleOrNull()?.get(TableModel.id)
-    }
-
-    fun getGroupDiscount(userId: Int): Float = transaction {
-        val groupId = User.select { User.id eq userId }.singleOrNull()?.get(User.groupId)
-        if (groupId != null) {
-            Group.select { Group.id eq groupId }.singleOrNull()?.get(Group.discount) ?: 0.0f
-        } else 0.0f
-    }
-
-    fun getById(orderId: Int): OrderOverzichtItem? = transaction {
-        val orderRow = Order.select { Order.id eq orderId }.singleOrNull() ?: return@transaction null
-
-        val createdAt = orderRow[Order.createdAt]
-        val clientName = User.select { User.id eq orderRow[Order.userId] }
-            .singleOrNull()?.get(User.name) ?: "Onbekend"
-        val tableNumber = TableModel.select { TableModel.id eq orderRow[Order.tableId] }
-            .singleOrNull()?.get(TableModel.number) ?: 0
-        val statusName = Status.select { Status.id eq orderRow[Order.statusId] }
-            .singleOrNull()?.get(Status.name) ?: "Onbekend"
-        val items = Orderitem.select { Orderitem.orderId eq orderId }.map { itemRow ->
-            val productRow = Product.select { Product.id eq itemRow[Orderitem.productId] }.singleOrNull()
-            val productName = productRow?.get(Product.name) ?: "Onbekend"
-            val productId = productRow?.get(Product.id) ?: itemRow[Orderitem.productId]
-            OverzichtOrderitem(
-                id = itemRow[Orderitem.id],
-                product = productName,
-                productId = productId,
-                quantity = itemRow[Orderitem.quantity],
-                price = itemRow[Orderitem.price]
-            )
-        }
-        OrderOverzichtItem(
-            id = orderId,
-            tableNumber = tableNumber,
-            status = statusName,
-            totalPrice = orderRow[Order.totalPrice],
-            clientName = clientName,
-            placedByStaff = orderRow[Order.isPlacedByStaff],
-            orderitems = items,
-            createdAt = createdAt.toString()
-        )
-    }
-
     fun updateOrder(
         orderId: Int,
         userId: Int,
@@ -200,6 +193,10 @@ object OrderRepository {
         val now = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
         val existingOrder = Order.select { Order.id eq orderId }.singleOrNull()
             ?: return@transaction AddResult.InsufficientStock(emptyList())
+
+        if (existingOrder[Order.statusId] == STATUS_BETAALD) {
+            return@transaction AddResult.InsufficientStock(listOf("Betaalde bestellingen kunnen niet aangepast worden"))
+        }
 
         val previousItems = Orderitem.select { Orderitem.orderId eq orderId }.toList()
         val prevByProduct = previousItems.groupBy { it[Orderitem.productId] }
@@ -269,21 +266,153 @@ object OrderRepository {
         AddResult.Success(orderId)
     }
 
-    fun checkoutOrder(orderId: Int): Boolean = transaction {
-        Order.select { Order.id eq orderId }.singleOrNull() ?: return@transaction false
-        val betaaldStatusId = Status.select { Status.name eq "betaald" }.singleOrNull()?.get(Status.id) ?: return@transaction false
+    fun getUserIdByName(name: String): Int? = transaction {
+        User.select { User.name eq name }.singleOrNull()?.get(User.id)
+    }
+
+    fun getTableIdByNumber(number: Int): Int? = transaction {
+        TableModel.select { TableModel.number eq number }.singleOrNull()?.get(TableModel.id)
+    }
+
+    fun getGroupDiscount(userId: Int): Float = transaction {
+        val groupId = User.select { User.id eq userId }.singleOrNull()?.get(User.groupId)
+        if (groupId != null) {
+            Group.select { Group.id eq groupId }.singleOrNull()?.get(Group.discount) ?: 0.0f
+        } else 0.0f
+    }
+
+    fun getById(orderId: Int): OrderOverzichtItem? = transaction {
+        val orderRow = Order.select { Order.id eq orderId }.singleOrNull() ?: return@transaction null
+        buildOrderOverviewItem(orderRow)
+    }
+
+    fun getOpenOrdersForClient(clientName: String): ClientOpenOrdersSummary? = transaction {
+        val userId = User.select { User.name eq clientName }.singleOrNull()?.get(User.id) ?: return@transaction null
+        val openOrders = Order.select {
+            (Order.userId eq userId) and (Order.statusId neq STATUS_BETAALD)
+        }.map { buildOrderOverviewItem(it) }
+            .filter { it.statusId in statusFlow && it.statusId != STATUS_BETAALD }
+
+        ClientOpenOrdersSummary(
+            clientName = clientName,
+            orders = openOrders,
+            totalOpenAmount = openOrders.sumOf { it.totalPrice.toDouble() }.toFloat(),
+            totalCheckoutableAmount = openOrders.filter { it.canCheckout }.sumOf { it.totalPrice.toDouble() }.toFloat()
+        )
+    }
+
+    fun transitionOrderStatus(orderId: Int, move: String): OrderStatusTransitionResponse = transaction {
+        val orderRow = Order.select { Order.id eq orderId }.singleOrNull()
+            ?: return@transaction OrderStatusTransitionResponse(success = false, error = "Order niet gevonden")
+
+        val currentStatusId = orderRow[Order.statusId]
+        if (currentStatusId == STATUS_BETAALD) {
+            return@transaction OrderStatusTransitionResponse(success = false, error = "Betaalde bestellingen kunnen niet meer wijzigen")
+        }
+
+        val targetStatusId = when (move.lowercase()) {
+            "next" -> nextStatusId(currentStatusId)
+            "previous" -> previousStatusId(currentStatusId)
+            else -> null
+        } ?: return@transaction OrderStatusTransitionResponse(
+            success = false,
+            error = "Ongeldige statusovergang"
+        )
+
         val updated = Order.update({ Order.id eq orderId }) {
-            it[Order.statusId] = betaaldStatusId
+            it[Order.statusId] = targetStatusId
+        }
+
+        if (updated <= 0) {
+            return@transaction OrderStatusTransitionResponse(success = false, error = "Status kon niet worden aangepast")
+        }
+
+        val updatedOrder = Order.select { Order.id eq orderId }.singleOrNull()?.let { buildOrderOverviewItem(it) }
+        OrderStatusTransitionResponse(success = updatedOrder != null, order = updatedOrder)
+    }
+
+    fun checkoutOrder(orderId: Int): Boolean = transaction {
+        val orderRow = Order.select { Order.id eq orderId }.singleOrNull() ?: return@transaction false
+        if (orderRow[Order.statusId] != STATUS_AFGELEVERD) {
+            return@transaction false
+        }
+        val updated = Order.update({ Order.id eq orderId }) {
+            it[Order.statusId] = STATUS_BETAALD
         }
         updated > 0
     }
 
-    fun setInBehandeling(orderId: Int): Boolean = transaction {
-        Order.select { Order.id eq orderId }.singleOrNull() ?: return@transaction false
-        val behandelingStatusId = Status.select { Status.name eq "in behandeling" }.singleOrNull()?.get(Status.id) ?: return@transaction false
-        val updated = Order.update({ Order.id eq orderId }) {
-            it[Order.statusId] = behandelingStatusId
+    fun checkoutOpenOrdersForClient(clientName: String): BulkCheckoutResponse = transaction {
+        val summary = getOpenOrdersForClient(clientName)
+            ?: return@transaction BulkCheckoutResponse(success = false, error = "Klant niet gevonden")
+
+        val checkoutableOrders = summary.orders.filter { it.statusId == STATUS_AFGELEVERD }
+        if (checkoutableOrders.isEmpty()) {
+            return@transaction BulkCheckoutResponse(
+                success = false,
+                summary = summary,
+                error = "Geen af te rekenen bestellingen voor deze klant"
+            )
         }
-        updated > 0
+
+        val updatedOrderIds = mutableListOf<Int>()
+        checkoutableOrders.forEach { order ->
+            val updated = Order.update({ (Order.id eq order.id) and (Order.statusId eq STATUS_AFGELEVERD) }) {
+                it[Order.statusId] = STATUS_BETAALD
+            }
+            if (updated > 0) {
+                updatedOrderIds += order.id
+            }
+        }
+
+        val updatedSummary = getOpenOrdersForClient(clientName)
+            ?: ClientOpenOrdersSummary(
+                clientName = clientName,
+                orders = emptyList(),
+                totalOpenAmount = 0f,
+                totalCheckoutableAmount = 0f
+            )
+
+        BulkCheckoutResponse(
+            success = updatedOrderIds.isNotEmpty(),
+            summary = updatedSummary,
+            updatedOrderIds = updatedOrderIds,
+            error = if (updatedOrderIds.isEmpty()) "Geen bestellingen aangepast" else null
+        )
+    }
+
+    fun setInBehandeling(orderId: Int): Boolean = transaction {
+        transitionOrderStatus(orderId, "next").success
+    }
+
+    fun deleteOrder(orderId: Int): DeleteOrderResponse = transaction {
+        val now = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
+        val orderRow = Order.select { Order.id eq orderId }.singleOrNull()
+            ?: return@transaction DeleteOrderResponse(success = false, error = "Order niet gevonden")
+
+        if (orderRow[Order.statusId] == STATUS_BETAALD) {
+            return@transaction DeleteOrderResponse(success = false, error = "Betaalde bestellingen kunnen niet verwijderd worden")
+        }
+
+        val orderItems = Orderitem.select { Orderitem.orderId eq orderId }.toList()
+        orderItems.forEach { itemRow ->
+            val productId = itemRow[Orderitem.productId]
+            val quantity = itemRow[Orderitem.quantity]
+            val currentStock = Inventory.select { Inventory.productId eq productId }
+                .singleOrNull()?.get(Inventory.quantity) ?: 0
+            Inventory.update({ Inventory.productId eq productId }) {
+                it[Inventory.quantity] = currentStock + quantity
+                it[Inventory.lastUpdated] = now
+            }
+        }
+
+        Orderitem.deleteWhere { SqlExpressionBuilder.run { Orderitem.orderId eq orderId } }
+        val deleted = Order.deleteWhere { SqlExpressionBuilder.run { Order.id eq orderId } }
+
+        if (deleted > 0) {
+            DeleteOrderResponse(success = true, deletedOrderId = orderRow[Order.id])
+        } else {
+            DeleteOrderResponse(success = false, error = "Bestelling kon niet verwijderd worden")
+        }
     }
 }
