@@ -28,6 +28,7 @@ external interface BestellingenPageProps : Props {
     var onMoveToPreviousStatus: (Int) -> Unit
     var clientOptions: List<String>
     var selectedClient: String
+    var clientInputError: String?
     var onSelectedClientChange: (String) -> Unit
     var onOpenBulkCheckout: () -> Unit
     var bulkSummary: ClientOpenOrdersSummary?
@@ -53,6 +54,7 @@ val BestellingenPage = FC<BestellingenPageProps> { props ->
             onApplyDateFilter = props.onApplyDateFilter
             clientOptions = props.clientOptions
             selectedClient = props.selectedClient
+            clientInputError = props.clientInputError
             onSelectedClientChange = props.onSelectedClientChange
             onOpenBulkCheckout = props.onOpenBulkCheckout
         }

@@ -9,6 +9,8 @@ import kotlinx.coroutines.MainScope
 import kotlinx.coroutines.await
 import kotlinx.coroutines.launch
 import kotlinx.serialization.json.Json
+import org.w3c.fetch.Headers
+import org.w3c.fetch.RequestInit
 import react.FC
 import react.Props
 import react.useEffect
@@ -19,7 +21,8 @@ val BestellingenScreen = FC<Props> {
     val json = Json { ignoreUnknownKeys = true }
     val (backendUrl, setBackendUrl) = useState<String?>(null)
     val userRole = (window.localStorage.getItem("userRole") ?: "").lowercase()
-    val canDeleteOrders = userRole == "medewerker" || userRole == "beheerder"
+    val jwtToken = window.localStorage.getItem("jwtToken")
+    val canDeleteOrders = !jwtToken.isNullOrBlank() && (userRole == "medewerker" || userRole == "beheerder")
     val (orders, setOrders) = useState<List<OrderOverzichtItem>>(emptyList())
     val (loading, setLoading) = useState(true)
     val (error, setError) = useState<String?>(null)
@@ -30,6 +33,7 @@ val BestellingenScreen = FC<Props> {
     val (bulkModalOpen, setBulkModalOpen) = useState(false)
     val (bulkLoading, setBulkLoading) = useState(false)
     val (bulkError, setBulkError) = useState<String?>(null)
+    val (clientInputError, setClientInputError) = useState<String?>(null)
 
     val statusOptions = listOf("aangemaakt", "in behandeling", "afgeleverd", "betaald")
     val (selectedStatuses, setSelectedStatuses) = useState<List<String>>(listOf("aangemaakt", "in behandeling", "afgeleverd"))
@@ -157,14 +161,20 @@ val BestellingenScreen = FC<Props> {
 
     suspend fun openBulkCheckoutSummary() {
         val url = backendUrl ?: return
-        if (selectedClient.isBlank()) {
-            setBulkError("Selecteer eerst een klant")
+        val trimmedClient = selectedClient.trim()
+        if (trimmedClient.isBlank()) {
+            setClientInputError("Selecteer of typ een bestaande klant")
             return
         }
+        if (clientOptions.none { it.equals(trimmedClient, ignoreCase = true) }) {
+            setClientInputError("Kies een bestaande klant uit de suggesties")
+            return
+        }
+        setClientInputError(null)
         setBulkLoading(true)
         setBulkError(null)
         try {
-            val response = window.fetch(url.trimEnd('/') + "/order/open-by-client?clientName=$selectedClient").await()
+            val response = window.fetch(url.trimEnd('/') + "/order/open-by-client?clientName=$trimmedClient").await()
             if (response.ok) {
                 val text = response.text().await()
                 setBulkSummary(json.decodeFromString<ClientOpenOrdersSummary>(text))
@@ -220,17 +230,27 @@ val BestellingenScreen = FC<Props> {
         }
         setError(null)
         try {
-            val token = window.localStorage.getItem("jwtToken")
-            val requestInit = js("{ method: 'DELETE', headers: {} }")
-            if (!token.isNullOrBlank()) {
-                requestInit.headers["Authorization"] = "Bearer $token"
-            }
+            val headers = Headers()
+            headers.set("Authorization", "Bearer $jwtToken")
             val response = window.fetch(
                 url.trimEnd('/') + "/order/$orderId",
-                requestInit
+                RequestInit(
+                    method = "DELETE",
+                    headers = headers
+                )
             ).await()
             val text = response.text().await()
-            val result = json.decodeFromString<DeleteOrderResponse>(text)
+
+            val result = try {
+                json.decodeFromString<DeleteOrderResponse>(text)
+            } catch (_: Throwable) {
+                DeleteOrderResponse(
+                    success = response.ok && text.contains("success", ignoreCase = true),
+                    deletedOrderId = if (response.ok) orderId else null,
+                    error = if (response.ok) null else text.ifBlank { "Bestelling verwijderen mislukt" }
+                )
+            }
+
             if (response.ok && result.success) {
                 setOrders { currentOrders -> currentOrders.filter { it.id != orderId } }
             } else {
@@ -281,7 +301,11 @@ val BestellingenScreen = FC<Props> {
         this.onMoveToPreviousStatus = { orderId: Int -> MainScope().launch { moveOrderStatus(orderId, "previous") } }
         this.clientOptions = clientOptions
         this.selectedClient = selectedClient
-        this.onSelectedClientChange = { clientName: String -> setSelectedClient(clientName) }
+        this.clientInputError = clientInputError
+        this.onSelectedClientChange = { clientName: String ->
+            setSelectedClient(clientName)
+            setClientInputError(null)
+        }
         this.onOpenBulkCheckout = { MainScope().launch { openBulkCheckoutSummary() } }
         this.bulkSummary = bulkSummary
         this.bulkModalOpen = bulkModalOpen

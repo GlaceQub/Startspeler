@@ -142,21 +142,23 @@ fun Routing.orderRoutes() {
             }
         }
 
-        delete("/{id}") {
-            val principal = call.principal<JWTPrincipal>()
-                ?: return@delete call.respond(HttpStatusCode.Unauthorized, mapOf("error" to "Niet ingelogd"))
-            val role = principal.payload.getClaim("role").asString()?.lowercase()
-            if (role != "medewerker" && role != "beheerder") {
-                return@delete call.respond(HttpStatusCode.Forbidden, mapOf("error" to "Onvoldoende rechten"))
-            }
+        authenticate("auth-jwt") {
+            delete("/{id}") {
+                val principal = call.principal<JWTPrincipal>()
+                    ?: return@delete call.respond(HttpStatusCode.Unauthorized, mapOf("error" to "Niet ingelogd"))
+                val role = principal.payload.getClaim("role").asString()?.lowercase()
+                if (role != "medewerker" && role != "beheerder") {
+                    return@delete call.respond(HttpStatusCode.Forbidden, mapOf("error" to "Onvoldoende rechten"))
+                }
 
-            val id = call.parameters["id"]?.toIntOrNull()
-                ?: return@delete call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Ongeldige order id"))
-            val result = OrderRepository.deleteOrder(id)
-            if (result.success) {
-                call.respond(HttpStatusCode.OK, result)
-            } else {
-                call.respond(HttpStatusCode.BadRequest, result)
+                val id = call.parameters["id"]?.toIntOrNull()
+                    ?: return@delete call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Ongeldige order id"))
+                val result = OrderRepository.deleteOrder(id)
+                if (result.success) {
+                    call.respond(HttpStatusCode.OK, result)
+                } else {
+                    call.respond(HttpStatusCode.BadRequest, result)
+                }
             }
         }
 

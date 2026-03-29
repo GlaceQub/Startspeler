@@ -5,18 +5,14 @@ import mui.icons.material.Clear
 import mui.icons.material.Search
 import mui.material.Box
 import mui.material.Button
-import mui.material.FormControl
-import mui.material.FormControlVariant
 import mui.material.IconButton
-import mui.material.InputLabel
-import mui.material.MenuItem
-import mui.material.Select
 import mui.material.TextField
 import mui.material.Typography
 import react.FC
 import react.Props
 import react.ReactNode
 import react.dom.events.ChangeEvent
+import react.dom.html.ReactHTML
 
 external interface BestellingenFilterBarProps : Props {
     var filter: String
@@ -29,6 +25,7 @@ external interface BestellingenFilterBarProps : Props {
     var onApplyDateFilter: () -> Unit
     var clientOptions: List<String>
     var selectedClient: String
+    var clientInputError: String?
     var onSelectedClientChange: (String) -> Unit
     var onOpenBulkCheckout: () -> Unit
 }
@@ -47,7 +44,7 @@ val BestellingenFilterBar = FC<BestellingenFilterBarProps> { props ->
                 TextField {
                     label = ReactNode("Zoek klant of tafel")
                     value = props.filter
-                    variant = FormControlVariant.standard
+                    variant = mui.material.FormControlVariant.standard
                     asDynamic().onChange = { event: ChangeEvent<*> ->
                         props.onFilterChange(event.target.asDynamic().value as String)
                     }
@@ -89,7 +86,7 @@ val BestellingenFilterBar = FC<BestellingenFilterBarProps> { props ->
                     label = ReactNode("Datum")
                     asDynamic().type = "date"
                     value = props.selectedDate
-                    variant = FormControlVariant.outlined
+                    variant = mui.material.FormControlVariant.outlined
                     size = mui.material.Size.small
                     asDynamic().onChange = { event: ChangeEvent<*> ->
                         props.onSelectedDateChange(event.target.asDynamic().value as String)
@@ -120,23 +117,25 @@ val BestellingenFilterBar = FC<BestellingenFilterBarProps> { props ->
             }
             Box {
                 sx = js("{ display: 'flex', flexDirection: 'row', alignItems: 'flex-end', gap: '12px', flexWrap: 'wrap', justifyContent: 'flex-end', marginLeft: 'auto' }")
-                FormControl {
-                    variant = FormControlVariant.outlined
-                    size = mui.material.Size.small
-                    sx = js("{ minWidth: '220px' }")
-                    InputLabel {
-                        +"Klant"
-                    }
-                    Select {
-                        value = props.selectedClient
+                Box {
+                    sx = js("{ display: 'flex', flexDirection: 'column', minWidth: '260px' }")
+                    TextField {
                         label = ReactNode("Klant")
-                        onChange = { event, _ ->
+                        value = props.selectedClient
+                        variant = mui.material.FormControlVariant.outlined
+                        size = mui.material.Size.small
+                        error = props.clientInputError != null
+                        helperText = props.clientInputError?.let { ReactNode(it) }
+                        asDynamic().onChange = { event: ChangeEvent<*> ->
                             props.onSelectedClientChange(event.target.asDynamic().value as String)
                         }
+                        asDynamic().inputProps = js("{ list: 'bestellingen-klanten' }")
+                    }
+                    ReactHTML.datalist {
+                        asDynamic().id = "bestellingen-klanten"
                         props.clientOptions.forEach { client ->
-                            MenuItem {
+                            ReactHTML.option {
                                 value = client
-                                +client
                             }
                         }
                     }

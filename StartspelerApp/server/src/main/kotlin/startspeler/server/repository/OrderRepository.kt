@@ -60,7 +60,7 @@ object OrderRepository {
         }
 
         val canEdit = statusId == STATUS_AANGEMAAKT
-        val canDelete = statusId != STATUS_BETAALD
+        val canDelete = statusId == STATUS_AANGEMAAKT
         val canCheckout = statusId == STATUS_AFGELEVERD
 
         return OrderOverzichtItem(
@@ -390,8 +390,8 @@ object OrderRepository {
         val orderRow = Order.select { Order.id eq orderId }.singleOrNull()
             ?: return@transaction DeleteOrderResponse(success = false, error = "Order niet gevonden")
 
-        if (orderRow[Order.statusId] == STATUS_BETAALD) {
-            return@transaction DeleteOrderResponse(success = false, error = "Betaalde bestellingen kunnen niet verwijderd worden")
+        if (orderRow[Order.statusId] != STATUS_AANGEMAAKT) {
+            return@transaction DeleteOrderResponse(success = false, error = "Alleen aangemaakte bestellingen kunnen verwijderd worden")
         }
 
         val orderItems = Orderitem.select { Orderitem.orderId eq orderId }.toList()
