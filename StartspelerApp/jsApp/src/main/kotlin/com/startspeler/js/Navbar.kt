@@ -70,7 +70,7 @@ val Navbar = FC<NavBarProps> { props ->
                     disableElevation = true
                     val cls = if (current == "usercreate") "nav-button active" else "nav-button"
                     asDynamic().className = cls
-                    if (current == "usercreate") asDynamic().ariaCurrent = "page"
+                    if (current == "usercreate") asDynamic()["aria-current"] = "page"
                     +"Klant aanmaken"
                 }
 
@@ -82,7 +82,7 @@ val Navbar = FC<NavBarProps> { props ->
                         disableElevation = true
                         val cls = if (current == "inventory") "nav-button active" else "nav-button"
                         asDynamic().className = cls
-                        if (current == "inventory") asDynamic().ariaCurrent = "page"
+                        if (current == "inventory") asDynamic()["aria-current"] = "page"
                         +"Stock"
                     }
                 }
@@ -95,7 +95,7 @@ val Navbar = FC<NavBarProps> { props ->
                         disableElevation = true
                         val cls = if (current == "bestellingen") "nav-button active" else "nav-button"
                         asDynamic().className = cls
-                        if (current == "bestellingen") asDynamic().ariaCurrent = "page"
+                        if (current == "bestellingen") asDynamic()["aria-current"] = "page"
                         +"Bestellingen"
                     }
                 }
@@ -106,7 +106,7 @@ val Navbar = FC<NavBarProps> { props ->
                     disableElevation = true
                     val cls = if (current == "tables") "nav-button active" else "nav-button"
                     asDynamic().className = cls
-                    if (current == "tables") asDynamic().ariaCurrent = "page"
+                    if (current == "tables") asDynamic()["aria-current"] = "page"
                     +"Tables"
                 }
 

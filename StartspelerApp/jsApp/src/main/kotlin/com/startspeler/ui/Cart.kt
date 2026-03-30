@@ -21,6 +21,7 @@ external interface CartProps : Props {
     var selectedKlant: String
     var onKlantChange: (String) -> Unit
     var onAddKlant: () -> Unit
+    var submitLabel: String?
 }
 
 val Cart = FC<CartProps> { props ->
@@ -59,7 +60,6 @@ val Cart = FC<CartProps> { props ->
             }
         }
 
-        // Tafel select dropdown
         Typography {
             sx = js("{ fontWeight: 700, marginTop: '16px', marginBottom: '8px' }")
             +"Tafel"
@@ -75,7 +75,6 @@ val Cart = FC<CartProps> { props ->
                 }
             }
         }
-        // Klant select dropdown with add button
         Typography {
             sx = js("{ fontWeight: 700, marginTop: '16px', marginBottom: '8px' }")
             +"Klant"
@@ -106,7 +105,7 @@ val Cart = FC<CartProps> { props ->
                 js("{ marginTop: 'auto', marginTop: '16px', backgroundColor: 'var(--startspeler-primary)', color: 'white', fontWeight: 700, borderRadius: '20px' }")
             fullWidth = true
             disabled = props.cartItems.isEmpty()
-            +"Bestellen"
+            +(props.submitLabel ?: "Bestellen")
             onClick = { _ -> props.onOrder() }
         }
     }
