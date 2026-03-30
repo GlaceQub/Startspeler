@@ -1,24 +1,21 @@
 package com.startspeler.js
 
-import com.startspeler.ui.BestelPage
 import com.startspeler.ui.UserCreateScreen
-import com.startspeler.js.Navbar
-import com.startspeler.ui.TafelPage
 import kotlinx.browser.window
 import mui.material.Box
 import mui.material.CircularProgress
 import react.FC
 import react.Props
 import react.create
-import react.dom.client.createRoot
 import react.dom.client.Root
+import react.dom.client.createRoot
 import react.dom.html.ReactHTML.div
 import react.useEffect
 import react.useEffectOnce
 import react.useState
-import web.dom.document
 import web.dom.Element
 import web.dom.ElementId
+import web.dom.document
 
 external fun alert(message: String)
 
@@ -53,7 +50,6 @@ private val App = FC<Props> {
 
     // alleen side-effect: luister naar hash changes en cleanup terugzetten
     useEffect(emptyList<Unit>()) {
-        val prev = window.onhashchange
         window.onhashchange = {
             route = currentRoute()
         }
@@ -86,6 +82,8 @@ private val App = FC<Props> {
                     }
 
                     "bestellingen" -> BestellingenScreen {}
+
+                    "groepen" -> GroepenScreen {}
 
                     "inventory" -> InventoryScreen {
 

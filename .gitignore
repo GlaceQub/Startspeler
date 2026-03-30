@@ -4,3 +4,4 @@
 OwnNotes/
 # Ignore database docker setup folder
 Database/docker/.env
+Meetings/SharedNotes/*

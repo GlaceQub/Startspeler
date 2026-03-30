@@ -1,0 +1,18 @@
+package com.startspeler.dto
+
+import kotlinx.serialization.Serializable
+
+@Serializable
+data class GroupMemberItem(
+    val id: Int,
+    val name: String
+)
+
+@Serializable
+data class GroupOverviewItem(
+    val id: Int,
+    val name: String,
+    val discountPercentage: Float,
+    val memberCount: Int,
+    val members: List<GroupMemberItem>
+)
