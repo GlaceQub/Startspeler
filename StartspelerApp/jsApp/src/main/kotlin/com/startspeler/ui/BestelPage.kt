@@ -13,8 +13,8 @@ external interface BestelPageProps : react.Props {
     var onCategoryClick: (Category) -> Unit
     var selectedCategory: Category?
     var onBackClick: () -> Unit
-    var loading: Boolean // Add loading prop
-    var error: String? // Add error prop
+    var loading: Boolean
+    var error: String?
     var cartItems: List<CartItem>
     var onAddToCart: (ProductItem) -> Unit
     var onRemoveFromCart: (CartItem) -> Unit
@@ -26,6 +26,8 @@ external interface BestelPageProps : react.Props {
     var selectedKlant: String
     var onKlantChange: (String) -> Unit
     var onAddKlant: () -> Unit
+    var onOrderSubmit: ((List<CartItem>, String, String) -> Unit)?
+    var submitLabel: String?
 }
 
 val BestelPage = FC<BestelPageProps> { pageProps ->
@@ -51,7 +53,15 @@ val BestelPage = FC<BestelPageProps> { pageProps ->
             Cart {
                 this.cartItems = pageProps.cartItems
                 this.onRemove = pageProps.onRemoveFromCart
-                this.onOrder = pageProps.OnOrder
+                // If parent provided onOrderSubmit, call it with current state, otherwise fall back to existing OnOrder
+                this.onOrder = {
+                    val submit = pageProps.onOrderSubmit
+                    if (submit != null) {
+                        submit(pageProps.cartItems, pageProps.selectedTafel, pageProps.selectedKlant)
+                    } else {
+                        pageProps.OnOrder()
+                    }
+                }
                 this.tafelOptions = pageProps.tafelOptions
                 this.selectedTafel = pageProps.selectedTafel
                 this.onTafelChange = pageProps.onTafelChange
@@ -59,6 +69,7 @@ val BestelPage = FC<BestelPageProps> { pageProps ->
                 this.selectedKlant = pageProps.selectedKlant
                 this.onKlantChange = pageProps.onKlantChange
                 this.onAddKlant = pageProps.onAddKlant
+                this.submitLabel = pageProps.submitLabel
             }
         }
     }

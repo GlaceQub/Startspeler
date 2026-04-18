@@ -37,16 +37,19 @@ fun Route.authRoutes(
         try {
             val ok = AuthRepository.authenticate(loginRequest.username, loginRequest.password)
             if (ok) {
+                val role = AuthRepository.getRoleName(loginRequest.username)
                 val token = JWT.create()
                     .withAudience(jwtAudience)
                     .withIssuer(jwtIssuer)
                     .withClaim("username", loginRequest.username)
+                    .withClaim("role", role)
                     .sign(jwtAlgorithm)
                 call.respond(
                     LoginResponse(
                         success = true,
                         message = "Login successful",
-                        token = token
+                        token = token,
+                        role = role
                     )
                 )
             } else {
@@ -78,7 +81,8 @@ fun Route.authRoutes(
         get("/me") {
             val principal = call.principal<JWTPrincipal>()
             val username = principal!!.payload.getClaim("username").asString()
-            call.respond(mapOf("username" to username))
+            val role = principal.payload.getClaim("role").asString()
+            call.respond(mapOf("username" to username, "role" to role))
         }
     }
 }
@@ -87,4 +91,9 @@ fun Route.authRoutes(
 data class LoginRequest(val username: String, val password: String)
 
 @Serializable
-data class LoginResponse(val success: Boolean, val message: String, val token: String? = null)
+data class LoginResponse(
+    val success: Boolean,
+    val message: String,
+    val token: String? = null,
+    val role: String? = null
+)
