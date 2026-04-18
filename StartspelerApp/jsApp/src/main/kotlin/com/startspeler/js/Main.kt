@@ -82,6 +82,7 @@ private val App = FC<Props> {
                     route == "usercreate" -> UserCreateScreen {}
                     route == "product" -> ProductScreen {}
                     route == "tables" -> TafelScreen {}
+                    route == "klanten" -> KlantenScreen {}
                     route.startsWith("bestel/edit/") -> OrderEditPage {}
                     else -> LoginScreen {
                         this.loggedIn = loggedIn
