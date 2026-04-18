@@ -1,9 +1,6 @@
 package com.startspeler.js
 
-import com.startspeler.ui.BestelPage
 import com.startspeler.ui.UserCreateScreen
-import com.startspeler.js.Navbar
-import com.startspeler.ui.TafelPage
 import kotlinx.browser.window
 import mui.material.Box
 import mui.material.CircularProgress
@@ -53,7 +50,6 @@ private val App = FC<Props> {
 
     // alleen side-effect: luister naar hash changes en cleanup terugzetten
     useEffect(emptyList<Unit>()) {
-        val prev = window.onhashchange
         window.onhashchange = {
             route = currentRoute()
         }
@@ -75,39 +71,19 @@ private val App = FC<Props> {
             // Main content fills the rest
             Box {
                 sx = js("{display: 'flex', flexGrow: 1, overflow: 'auto', minWidth: 0 }")
-                when (route) {
-                    "login" -> LoginScreen {
+                when {
+                    route == "login" -> LoginScreen {
                         this.loggedIn = loggedIn
                         this.setLoggedIn = { loggedIn = it }
                     }
-
-                    "bestel" -> BestelScreen {
-                        // You can pass loggedIn here if BestelScreen needs it
-                    }
-
-                    "bestellingen" -> BestellingenScreen {}
-
-                    "inventory" -> InventoryScreen {
-
-                    }
-                    
-                    "usercreate" -> UserCreateScreen {
-
-                    }
-
-                    "product" -> ProductScreen {
-
-                    }
-
-                    "tables" -> TafelScreen {
-
-                    }
-
-                    "klanten" -> KlantenScreen {
-
-                    }
-
-
+                    route == "bestel" -> BestelScreen {}
+                    route == "bestellingen" -> BestellingenScreen {}
+                    route == "inventory" -> InventoryScreen {}
+                    route == "usercreate" -> UserCreateScreen {}
+                    route == "product" -> ProductScreen {}
+                    route == "tables" -> TafelScreen {}
+                    route == "klanten" -> KlantenScreen {}
+                    route.startsWith("bestel/edit/") -> OrderEditPage {}
                     else -> LoginScreen {
                         this.loggedIn = loggedIn
                         this.setLoggedIn = { loggedIn = it }

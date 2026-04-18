@@ -4,14 +4,13 @@ import com.startspeler.ui.LoginPage
 import kotlinx.browser.window
 import org.w3c.fetch.Headers
 import org.w3c.fetch.RequestInit
+import org.w3c.fetch.Response
 import react.FC
 import react.Props
 import react.useEffect
 import react.useEffectOnce
 import react.useState
 import kotlin.js.Promise
-import org.w3c.fetch.Response
-
 
 external interface LoginScreenProps : Props {
     var loggedIn: Boolean
@@ -43,6 +42,7 @@ val LoginScreen = FC<LoginScreenProps> { props ->
         }
         jwtToken = null
         window.localStorage.removeItem("jwtToken")
+        window.localStorage.removeItem("userRole")
         props.setLoggedIn(false)
         password = ""
     }
@@ -109,10 +109,14 @@ val LoginScreen = FC<LoginScreenProps> { props ->
                         console.log("Login response data:", data)
                         if (data.success == true) {
                             val token = data.token as? String
+                            val role = data.role as? String
                             console.log("Saving JWT to localStorage:", token)
                             if (token != null) {
                                 window.localStorage.setItem("jwtToken", token)
                                 jwtToken = token
+                            }
+                            if (role != null) {
+                                window.localStorage.setItem("userRole", role)
                             }
                             props.setLoggedIn(true)
                         } else {

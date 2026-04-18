@@ -97,8 +97,15 @@ val ProductScreen = FC<ProductScreenProps> {
         setMerged(viewList)
     }
 
-    val handleAdd: (String, Int, Float, Int) -> Unit = { name, categoryId, price, popularity ->
+    val handleAdd: (String, Int, Float, Int) -> Unit = add@{ name, categoryId, price, popularity ->
         val url = backendUrl
+
+        if (price < 0) {
+            setSnackbarMsg("Prijs mag niet negatief zijn.")
+            setSnackbarOpen(true)
+            return@add
+        }
+
         if (url == null) {
             setSnackbarMsg("Backend URL niet geladen.")
             setSnackbarOpen(true)
@@ -139,12 +146,19 @@ val ProductScreen = FC<ProductScreenProps> {
                     setSnackbarOpen(true)
                 }
             }
-            Unit
+                Unit
         }
     }
 
-    val handleEdit: (Int, String, Int, Float, Int) -> Unit = { id, name, categoryId, price, popularity ->
+    val handleEdit: (Int, String, Int, Float, Int) -> Unit = edit@{ id, name, categoryId, price, popularity ->
         val url = backendUrl
+
+        if (price < 0) {
+            setSnackbarMsg("Prijs mag niet negatief zijn.")
+            setSnackbarOpen(true)
+                return@edit
+        }
+
         if (url == null) {
             setSnackbarMsg("Backend URL niet geladen.")
             setSnackbarOpen(true)

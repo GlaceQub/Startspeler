@@ -6,6 +6,7 @@ import kotlinx.serialization.Serializable
 data class OverzichtOrderitem(
     val id: Int,
     val product: String,
+    val productId: Int,
     val quantity: Int,
     val price: Float
 )

@@ -5,7 +5,11 @@ import com.startspeler.models.Product
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.neq
+import org.jetbrains.exposed.sql.kotlin.datetime.datetime
 import org.jetbrains.exposed.sql.transactions.transaction
+import kotlinx.datetime.Clock
+import kotlinx.datetime.TimeZone
+import kotlinx.datetime.toLocalDateTime
 import db.tables.Product as ProductTable
 import db.tables.Inventory as InventoryTable
 
@@ -84,6 +88,10 @@ object ProductRepository {
             }
     }
 
+    private fun validateProductInput(name: String, price: Float) {
+        require(name.isNotBlank()) { "Product naam is verplicht" }
+        require(price >= 0) { "Prijs mag niet negatief zijn" }
+    }
     fun create(name: String, categoryId: Int, price: Float, popularity: Int = 0): Product = transaction {
         val stmt = ProductTable.insert { row ->
             row[ProductTable.name] = name
@@ -93,6 +101,13 @@ object ProductRepository {
         }
 
         val newId = stmt[ProductTable.id]
+
+        InventoryTable.insert { row ->
+            row[InventoryTable.productId] = newId
+            row[InventoryTable.quantity] = 0
+            row[InventoryTable.minimumQuantity] = 24
+            row[InventoryTable.lastUpdated] = Clock.System.now().toLocalDateTime(TimeZone.UTC)
+        }
 
         Product(
             id = newId,
