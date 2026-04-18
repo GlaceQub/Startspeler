@@ -48,7 +48,6 @@ val InventoryScreen = FC<InventoryScreenProps> {
                 resp.json().then { d ->
                     val data = d.unsafeCast<dynamic>()
                     val url = data.backendUrl as? String
-                    console.log("Loaded backendUrl:", url)
                     setBackendUrl(url)
                 }
             }
@@ -62,7 +61,6 @@ val InventoryScreen = FC<InventoryScreenProps> {
             try {
                 val invResp = window.fetch(backendUrl.trimEnd('/') + "/inventory").await()
                 val invText = invResp.text().await()
-                console.log("GET /inventory status:", invResp.status, invResp.statusText)
                 if (!invResp.ok) {
                     setError("Failed to fetch inventory: ${invResp.status} ${invResp.statusText}")
                     setInventoryItems(emptyList())
@@ -73,7 +71,6 @@ val InventoryScreen = FC<InventoryScreenProps> {
 
                 val prodResp = window.fetch(backendUrl.trimEnd('/') + "/products").await()
                 val prodText = prodResp.text().await()
-                console.log("GET /products status:", prodResp.status, prodResp.statusText)
                 if (prodResp.ok) {
                     val prodList = json.decodeFromString(ListSerializer(ProductMinDto.serializer()), prodText)
                     setProducts(prodList)
@@ -83,7 +80,6 @@ val InventoryScreen = FC<InventoryScreenProps> {
 
                 val catResp = window.fetch(backendUrl.trimEnd('/') + "/categories").await()
                 val catText = catResp.text().await()
-                console.log("GET /categories status:", catResp.status, catResp.statusText)
                 if (catResp.ok) {
                     val catList = json.decodeFromString(ListSerializer(CategoryDto.serializer()), catText)
                     setCategories(catList)
@@ -91,7 +87,6 @@ val InventoryScreen = FC<InventoryScreenProps> {
                     setCategories(emptyList())
                 }
             } catch (e: Throwable) {
-                console.error("Fout bij het ophalen van inventory:", e)
                 setError("Fout bij het ophalen van inventory: $e")
             } finally {
                 setLoading(false)
@@ -132,7 +127,6 @@ val InventoryScreen = FC<InventoryScreenProps> {
                 try {
                     val getResp = window.fetch(backendUrl.trimEnd('/') + "/inventory/${item.id}").await()
                     val getText = getResp.text().await()
-                    console.log("GET /inventory/${item.id} status:", getResp.status, getResp.statusText)
                     if (getResp.ok) {
                         val current = json.decodeFromString(InventoryDto.serializer(), getText)
                         val inputQty = window.prompt(
@@ -196,8 +190,6 @@ val InventoryScreen = FC<InventoryScreenProps> {
                         init.method = "DELETE"
                         val resp = window.fetch(url, init).await()
                         val respText = resp.text().await()
-                        console.log("DELETE $url status:", resp.status, resp.statusText)
-                        console.log("DELETE body:", respText)
                         if (resp.ok) {
                             setInventoryItems(inventoryItems.filter { it.id != item.id })
                             setSelectedItem { null }
