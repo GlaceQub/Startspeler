@@ -11,6 +11,12 @@ import org.jetbrains.exposed.sql.select
 import org.jetbrains.exposed.sql.transactions.transaction
 import utils.UtcNow
 import auth.PasswordManager
+import org.jetbrains.exposed.sql.deleteWhere
+import org.jetbrains.exposed.sql.update
+import org.jetbrains.exposed.sql.selectAll
+import org.jetbrains.exposed.sql.and
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.like
+import org.jetbrains.exposed.sql.SqlExpressionBuilder.neq
 
 object UserRepository {
     /** Create a default Admin user if none exists. */
@@ -133,5 +139,46 @@ object UserRepository {
             passwordHash = pwHash,
             salt = salt
         )
+    }
+
+    fun getAllUsers(name: String? = null, email: String? = null): List<User> = transaction {
+        val q = DbUser.selectAll()
+        val filtered = if (!name.isNullOrBlank() && !email.isNullOrBlank()) {
+            DbUser.select { (DbUser.name like "%$name%") and (DbUser.email like "%$email%") }
+        } else if (!name.isNullOrBlank()) {
+            DbUser.select { DbUser.name like "%$name%" }
+        } else if (!email.isNullOrBlank()) {
+            DbUser.select { DbUser.email like "%$email%" }
+        } else {
+            q
+        }
+        filtered.map { row -> mapRowToUser(row) }
+    }
+
+    fun getUserById(id: Int): User? = transaction {
+        DbUser.select { DbUser.id eq id }.singleOrNull()?.let { mapRowToUser(it) }
+    }
+
+    fun usernameExists(username: String, excludeId: Int? = null): Boolean = transaction {
+        if (excludeId == null) DbUser.select { DbUser.name eq username }.count() > 0
+        else DbUser.select { (DbUser.name eq username) and (DbUser.id neq excludeId) }.count() > 0
+    }
+
+    fun emailExists(email: String, excludeId: Int? = null): Boolean = transaction {
+        if (excludeId == null) DbUser.select { DbUser.email eq email }.count() > 0
+        else DbUser.select { (DbUser.email eq email) and (DbUser.id neq excludeId) }.count() > 0
+    }
+
+    fun updateUser(id: Int, username: String, email: String?, groupId: Int?): User? = transaction {
+        val updated = DbUser.update({ DbUser.id eq id }) {
+            it[DbUser.name] = username
+            it[DbUser.email] = email
+            if (groupId != null) it[DbUser.groupId] = groupId
+        }
+        if (updated == 0) null else getUserById(id)
+    }
+
+    fun deleteUser(id: Int): Boolean = transaction {
+        DbUser.deleteWhere { DbUser.id eq id } > 0
     }
 }
