@@ -96,7 +96,7 @@ val Navbar = FC<NavBarProps> { props ->
                         val cls = if (current == "groepen") "nav-button active" else "nav-button"
                         asDynamic().className = cls
                         if (current == "groepen") asDynamic()["aria-current"] = "page"
-                        +"Groepen"
+                        +"Communities"
                     }
                 }
 
