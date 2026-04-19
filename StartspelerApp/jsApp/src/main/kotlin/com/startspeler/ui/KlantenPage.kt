@@ -16,6 +16,7 @@ import mui.material.DialogTitle
 import mui.material.FormControlMargin
 import mui.material.IconButton
 import mui.material.IconButtonColor
+import mui.material.MenuItem
 import mui.material.TextField
 import mui.material.Typography
 import mui.system.Box
@@ -42,6 +43,7 @@ external interface KlantenPageProps : Props {
     var onSearch: (name: String, email: String) -> Unit
     var onUpdate: (id: Int, name: String, email: String?, groupId: Int?) -> Unit
     var onDelete: (id: Int) -> Unit
+    var groupNameById: Map<Int, String>
 }
 
 val KlantenPage = FC<KlantenPageProps> { props ->
@@ -52,7 +54,7 @@ val KlantenPage = FC<KlantenPageProps> { props ->
     val (editId, setEditId) = useState<Int?>(null)
     val (editName, setEditName) = useState("")
     val (editEmail, setEditEmail) = useState("")
-    val (editGroupId, setEditGroupId) = useState("")
+    val (editGroupId, setEditGroupId) = useState<Int?>(null)
 
     val (deleteOpen, setDeleteOpen) = useState(false)
     val (deleteId, setDeleteId) = useState<Int?>(null)
@@ -64,6 +66,12 @@ val KlantenPage = FC<KlantenPageProps> { props ->
     useEffect(filterName, filterEmail) {
         props.onSearch(filterName.trim(), filterEmail.trim())
     }
+
+    // Build dropdown options (sorted by group name)
+    val groupOptions: List<Pair<Int, String>> = props.groupNameById
+        .entries
+        .map { it.key to it.value }
+        .sortedBy { it.second.lowercase() }
 
     Box {
         sx =
@@ -124,7 +132,8 @@ val KlantenPage = FC<KlantenPageProps> { props ->
                                 }
 
                                 Typography { sx = js("{ mt: 0.5 }"); +(u.email ?: "—") }
-                                Typography { sx = js("{ mt: 0.5 }"); +"Groep: ${u.groupId}" }
+                                val groupName = props.groupNameById[u.groupId] ?: u.groupId.toString()
+                                Typography { sx = js("{ mt: 0.5 }"); +"Groep: $groupName" }
 
                                 Box {
                                     sx = js("{ display: 'flex', justifyContent: 'flex-end', gap: 1, mt: 1 }")
@@ -135,7 +144,7 @@ val KlantenPage = FC<KlantenPageProps> { props ->
                                             setEditId(u.id)
                                             setEditName(u.name)
                                             setEditEmail(u.email ?: "")
-                                            setEditGroupId(u.groupId.toString())
+                                            setEditGroupId(u.groupId)
                                             setEditOpen(true)
                                         }
                                         Edit()
@@ -180,12 +189,23 @@ val KlantenPage = FC<KlantenPageProps> { props ->
                     }
 
                     TextField {
-                        label = react.ReactNode("Groep ID")
-                        value = editGroupId
-                        onChange = { e -> setEditGroupId(e.target.asDynamic().value as String) }
-                        asDynamic().type = "number"
+                        select = true
+                        label = react.ReactNode("Groep")
+                        value = (editGroupId ?: "").toString()
+                        onChange = { e ->
+                            val v = e.target.asDynamic().value as String
+                            setEditGroupId(v.toIntOrNull())
+                        }
                         fullWidth = true
                         margin = FormControlMargin.normal
+
+                        // options
+                        groupOptions.forEach { (id, name) ->
+                            MenuItem {
+                                value = id.toString()
+                                +name
+                            }
+                        }
                     }
                 }
 
@@ -200,7 +220,7 @@ val KlantenPage = FC<KlantenPageProps> { props ->
                                     id,
                                     editName.trim(),
                                     editEmail.trim().ifBlank { null },
-                                    editGroupId.toIntOrNull()
+                                    editGroupId
                                 )
                                 setEditOpen(false)
                             }
