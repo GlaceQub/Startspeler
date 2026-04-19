@@ -50,24 +50,43 @@ val BestelScreen = FC<BestelScreenProps> { props ->
     val handleAddKlant: () -> Unit = {
         setAddKlantModalOpen(true)
     }
+
+    suspend fun refreshKlanten(selectName: String? = null) {
+        val base = backendUrl ?: return
+
+        val url = base.trimEnd('/') + "/klanten/names"
+        val resp = window.fetch(url).await()
+        val responseText = resp.text().await()
+
+        val klantenList = Json.decodeFromString<List<String>>(responseText)
+        setKlanten(klantenList)
+
+        when {
+            selectName != null && klantenList.contains(selectName) -> setSelectedKlant(selectName)
+            klantenList.isNotEmpty() -> setSelectedKlant(klantenList.first())
+            else -> setSelectedKlant("")
+        }
+    }
+
     val handleKlantModalAdd: (String, String?) -> Unit = { name, email ->
         if (name.isNotBlank() && backendUrl != null) {
             MainScope().launch {
                 try {
+                    val url = backendUrl!!.trimEnd('/') + "/klant/add"
+
                     val bodyObj = js("{ name: name, email: email }")
                     val requestInit = js("{ method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(bodyObj) }")
-                    val response = window.fetch(
-                        backendUrl.trimEnd('/') + "/klant/add",
-                        requestInit
-                    ).await()
+
+                    val response = window.fetch(url, requestInit).await()
+                    val responseText = response.text().await()
+
                     if (response.ok) {
-                        setKlanten(klanten + name)
-                        setSelectedKlant(name)
+                        refreshKlanten(selectName = name)
                     } else {
-                        setError("Klant toevoegen mislukt: ${'$'}{response.status} ${'$'}{response.statusText}")
+                        setError("Klant toevoegen mislukt: ${response.status} ${response.statusText} $responseText")
                     }
-                } catch (_: Throwable) {
-                    setError("Klant toevoegen mislukt")
+                } catch (e: Throwable) {
+                    setError("Klant toevoegen mislukt: $e")
                 } finally {
                     setAddKlantModalOpen(false)
                 }
@@ -127,17 +146,12 @@ val BestelScreen = FC<BestelScreenProps> { props ->
             // Fetch klanten
             MainScope().launch {
                 try {
-                    val response = window.fetch(backendUrl.trimEnd('/') + "/klanten").await().text().await()
-                    val klantenList = Json.decodeFromString<List<String>>(response)
-                    setKlanten(klantenList)
-                    setSelectedKlant("")
-                    if (klantenList.isNotEmpty()) {
-                        setSelectedKlant(klantenList.first())
-                    }
+                    refreshKlanten()
                 } catch (e: Throwable) {
-                    setError("Fout bij het ophalen van de klanten: ${'$'}e")
+                    setError("Fout bij het ophalen van de klanten: $e")
                 }
             }
+
             // Fetch tafels
             MainScope().launch {
                 try {
@@ -218,8 +232,7 @@ val BestelScreen = FC<BestelScreenProps> { props ->
         })
     }
     val handleOrder: () -> Unit = {
-        console.log("Placing order with items:", cartItems)
-        if (backendUrl == null) {
+        if (backendUrl == null){
             setError("Backend URL niet geladen")
         } else if (cartItems.isEmpty()) {
             setError("Geen producten in de bestelling")
