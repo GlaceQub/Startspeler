@@ -7,21 +7,33 @@ import mui.material.CircularProgress
 import react.FC
 import react.Props
 import react.create
-import react.dom.client.createRoot
 import react.dom.client.Root
+import react.dom.client.createRoot
 import react.dom.html.ReactHTML.div
 import react.useEffect
 import react.useEffectOnce
 import react.useState
-import web.dom.document
 import web.dom.Element
 import web.dom.ElementId
+import web.dom.document
 
 external fun alert(message: String)
 
 private fun currentRoute(): String {
     val raw = window.location.hash.removePrefix("#").removePrefix("/")
-    return if (raw.isEmpty()) "login" else raw
+    return if (raw.isEmpty()) "login" else raw.substringBefore("?")
+}
+
+private fun queryParam(key: String): String? {
+    val hash = window.location.hash.removePrefix("#").removePrefix("/")
+    val query = hash.substringAfter("?", "")
+    if (query.isEmpty()) return null
+    return query.split("&")
+        .mapNotNull { part ->
+            val kv = part.split("=", limit = 2)
+            if (kv.size == 2 && kv[0] == key) kv[1] else null
+        }
+        .firstOrNull()
 }
 
 fun main() {
@@ -36,6 +48,7 @@ fun main() {
 
 private val App = FC<Props> {
     var route by useState(currentRoute())
+    var tafelParam by useState(queryParam("tafel"))
     var loggedIn by useState(false)
     var authChecked by useState(false)
 
@@ -52,6 +65,7 @@ private val App = FC<Props> {
     useEffect(emptyList<Unit>()) {
         window.onhashchange = {
             route = currentRoute()
+            tafelParam = queryParam("tafel")
         }
     }
 
@@ -76,12 +90,16 @@ private val App = FC<Props> {
                         this.loggedIn = loggedIn
                         this.setLoggedIn = { loggedIn = it }
                     }
-                    route == "bestel" -> BestelScreen {}
+                    route == "bestel" -> BestelScreen {
+                        this.initialTafelId = tafelParam?.toIntOrNull()
+                    }
                     route == "bestellingen" -> BestellingenScreen {}
                     route == "inventory" -> InventoryScreen {}
                     route == "usercreate" -> UserCreateScreen {}
                     route == "product" -> ProductScreen {}
                     route == "tables" -> TafelScreen {}
+                    route == "klanten" -> KlantenScreen {}
+                    route == "groepen" -> GroepenScreen {}
                     route.startsWith("bestel/edit/") -> OrderEditPage {}
                     else -> LoginScreen {
                         this.loggedIn = loggedIn

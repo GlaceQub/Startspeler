@@ -63,6 +63,17 @@ val Navbar = FC<NavBarProps> { props ->
                     +"Bestel"
                 }
 
+                // KLANTEN knop
+                Button {
+                    onClick = { _ -> window.location.hash = "#/klanten" }
+                    variant = ButtonVariant.contained
+                    disableElevation = true
+                    val cls = if (current == "klanten") "nav-button active" else "nav-button"
+                    asDynamic().className = cls
+                    if (current == "klanten") asDynamic()["aria-current"] = "page"
+                    +"Klanten"
+                }
+
                 // KLant aanmaken knop
                 Button {
                     onClick = { _ -> window.location.hash = "#/usercreate" }
@@ -84,6 +95,19 @@ val Navbar = FC<NavBarProps> { props ->
                         asDynamic().className = cls
                         if (current == "inventory") asDynamic()["aria-current"] = "page"
                         +"Stock"
+                    }
+                }
+
+                // Groepen knop (optioneel, alleen zichtbaar voor ingelogde admins)
+                if (isLoggedIn) {
+                    Button {
+                        onClick = { _ -> window.location.hash = "#/groepen" }
+                        variant = ButtonVariant.contained
+                        disableElevation = true
+                        val cls = if (current == "groepen") "nav-button active" else "nav-button"
+                        asDynamic().className = cls
+                        if (current == "groepen") asDynamic()["aria-current"] = "page"
+                        +"Communities"
                     }
                 }
 

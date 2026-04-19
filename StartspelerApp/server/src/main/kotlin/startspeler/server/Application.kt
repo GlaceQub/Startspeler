@@ -26,6 +26,7 @@ import startspeler.server.routes.orderRoutes
 import startspeler.server.routes.klantenRoutes
 import startspeler.server.routes.tafelRoutes
 import startspeler.server.routes.inventoryRoutes
+import startspeler.server.routes.groupRoutes
 import startspeler.server.repository.UserRepository
 import io.ktor.http.HttpMethod
 
@@ -172,6 +173,7 @@ fun main() {
             klantenRoutes()
             tafelRoutes()
             inventoryRoutes()
+            groupRoutes()
         }
     }.start(wait = true)
     //endregion
