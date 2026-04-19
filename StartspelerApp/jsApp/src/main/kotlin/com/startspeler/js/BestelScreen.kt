@@ -19,9 +19,11 @@ import mui.material.Snackbar
 import mui.material.Alert
 import com.startspeler.dto.klantToevoegen
 
-external interface BestelScreenProps : Props
+external interface BestelScreenProps : Props {
+    var initialTafelId: Int?
+}
 
-val BestelScreen = FC<BestelScreenProps> {
+val BestelScreen = FC<BestelScreenProps> { props ->
     val (categories, setCategories) = useState<List<Category>>(emptyList())
     val (products, setProducts) = useState<List<ProductItem>>(emptyList())
     val (selectedCategory, setSelectedCategory) = useState<Category?>(null)
@@ -117,6 +119,8 @@ val BestelScreen = FC<BestelScreenProps> {
         }
     }
 
+    val initialTafelId = props.initialTafelId
+
     // Fetch klanten and tafels from backend
     useEffect(dependencies = arrayOf(backendUrl)) {
         if (backendUrl != null) {
@@ -140,10 +144,9 @@ val BestelScreen = FC<BestelScreenProps> {
                     val response = window.fetch(backendUrl.trimEnd('/') + "/tafels").await().text().await()
                     val tafelList = Json.decodeFromString<List<String>>(response)
                     setTafelOptions(tafelList)
-                    setSelectedTafel("")
-                    if (tafelList.isNotEmpty()) {
-                        setSelectedTafel(tafelList.first())
-                    }
+                    // Auto-select from QR param if present, otherwise first
+                    val matched = if (initialTafelId != null) tafelList.find { it.contains(initialTafelId.toString()) } else null
+                    setSelectedTafel(matched ?: tafelList.firstOrNull() ?: "")
                 } catch (e: Throwable) {
                     setError("Fout bij het ophalen van de tafels: ${'$'}e")
                 }
