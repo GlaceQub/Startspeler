@@ -98,6 +98,19 @@ val Navbar = FC<NavBarProps> { props ->
                     }
                 }
 
+                // Groepen knop (optioneel, alleen zichtbaar voor ingelogde admins)
+                if (isLoggedIn) {
+                    Button {
+                        onClick = { _ -> window.location.hash = "#/groepen" }
+                        variant = ButtonVariant.contained
+                        disableElevation = true
+                        val cls = if (current == "groepen") "nav-button active" else "nav-button"
+                        asDynamic().className = cls
+                        if (current == "groepen") asDynamic()["aria-current"] = "page"
+                        +"Communities"
+                    }
+                }
+
                 // Bestellingen knop (optioneel, alleen zichtbaar voor ingelogde gebruikers)
                 if (isLoggedIn) {
                     Button {

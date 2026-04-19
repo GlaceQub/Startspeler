@@ -7,15 +7,15 @@ import mui.material.CircularProgress
 import react.FC
 import react.Props
 import react.create
-import react.dom.client.createRoot
 import react.dom.client.Root
+import react.dom.client.createRoot
 import react.dom.html.ReactHTML.div
 import react.useEffect
 import react.useEffectOnce
 import react.useState
-import web.dom.document
 import web.dom.Element
 import web.dom.ElementId
+import web.dom.document
 
 external fun alert(message: String)
 
@@ -83,6 +83,7 @@ private val App = FC<Props> {
                     route == "product" -> ProductScreen {}
                     route == "tables" -> TafelScreen {}
                     route == "klanten" -> KlantenScreen {}
+                    route == "groepen" -> GroepenScreen {}
                     route.startsWith("bestel/edit/") -> OrderEditPage {}
                     else -> LoginScreen {
                         this.loggedIn = loggedIn
