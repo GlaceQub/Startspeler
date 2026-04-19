@@ -74,17 +74,6 @@ val Navbar = FC<NavBarProps> { props ->
                     +"Klanten"
                 }
 
-                // KLant aanmaken knop
-                Button {
-                    onClick = { _ -> window.location.hash = "#/usercreate" }
-                    variant = ButtonVariant.contained
-                    disableElevation = true
-                    val cls = if (current == "usercreate") "nav-button active" else "nav-button"
-                    asDynamic().className = cls
-                    if (current == "usercreate") asDynamic()["aria-current"] = "page"
-                    +"Klant aanmaken"
-                }
-
                 // Inventory knop (optioneel, alleen zichtbaar voor ingelogde gebruikers)
                 if (isLoggedIn) {
                     Button {

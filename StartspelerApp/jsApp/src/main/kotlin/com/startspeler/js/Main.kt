@@ -1,6 +1,5 @@
 package com.startspeler.js
 
-import com.startspeler.ui.UserCreateScreen
 import kotlinx.browser.window
 import mui.material.Box
 import mui.material.CircularProgress
@@ -95,7 +94,6 @@ private val App = FC<Props> {
                     }
                     route == "bestellingen" -> BestellingenScreen {}
                     route == "inventory" -> InventoryScreen {}
-                    route == "usercreate" -> UserCreateScreen {}
                     route == "product" -> ProductScreen {}
                     route == "tables" -> TafelScreen {}
                     route == "klanten" -> KlantenScreen {}
