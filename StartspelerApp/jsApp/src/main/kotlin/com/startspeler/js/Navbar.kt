@@ -112,16 +112,18 @@ val Navbar = FC<NavBarProps> { props ->
                         +"Bestellingen"
                     }
                 }
-            }
-                Button {
-                    onClick = { _ -> window.location.hash = "/tables" }
-                    variant = ButtonVariant.contained
-                    disableElevation = true
-                    val cls = if (current == "tables") "nav-button active" else "nav-button"
-                    asDynamic().className = cls
-                    if (current == "tables") asDynamic()["aria-current"] = "page"
-                    +"Tables"
+                if (isLoggedIn){
+                    Button {
+                        onClick = { _ -> window.location.hash = "/tables" }
+                        variant = ButtonVariant.contained
+                        disableElevation = true
+                        val cls = if (current == "tables") "nav-button active" else "nav-button"
+                        asDynamic().className = cls
+                        if (current == "tables") asDynamic()["aria-current"] = "page"
+                        +"Tables"
+                    }
                 }
+            }
 
         }
     }
