@@ -1,48 +1,25 @@
 package startspeler.server.routes
 
+import com.startspeler.dto.InventoryDto
+import com.startspeler.dto.InventoryUpdateRequest
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
-import kotlinx.serialization.Serializable
-import org.jetbrains.exposed.sql.*
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
-import org.jetbrains.exposed.sql.transactions.transaction
-import db.tables.Inventory as InventoryTable
-
-
-@Serializable
-data class InventoryDto(
-    val id: Int,
-    val productId: Int,
-    val quantity: Int,
-    val minimumQuantity: Int? = null,
-    val lastUpdated: String? = null
-)
-
-@Serializable
-data class InventoryUpdateRequest(
-    val quantity: Int,
-    val minimumQuantity: Int? = null
-)
+import startspeler.server.repository.InventoryRepository
 
 fun Routing.inventoryRoutes() {
     route("/inventory") {
         get {
-            val items = transaction {
-                InventoryTable
-                    .selectAll()
-                    .orderBy(InventoryTable.id to SortOrder.ASC)
-                    .map {
-                        InventoryDto(
-                            id = it[InventoryTable.id],
-                            productId = it[InventoryTable.productId],
-                            quantity = it[InventoryTable.quantity],
-                            minimumQuantity = it[InventoryTable.minimumQuantity],
-                            lastUpdated = it[InventoryTable.lastUpdated]?.toString()
-                        )
-                    }
+            val items = InventoryRepository.getAll().map { inv ->
+                InventoryDto(
+                    id = inv.id,
+                    productId = inv.productId,
+                    quantity = inv.quantity,
+                    minimumQuantity = inv.minimumQuantity,
+                    lastUpdated = inv.lastUpdated?.toString()
+                )
             }
             call.respond(items)
         }
@@ -51,22 +28,16 @@ fun Routing.inventoryRoutes() {
             val id = call.parameters["id"]?.toIntOrNull()
                 ?: return@get call.respond(HttpStatusCode.BadRequest, "Invalid id")
 
-            val item = transaction {
-                InventoryTable
-                    .select { InventoryTable.id eq id }
-                    .singleOrNull()
-                    ?.let {
-                        InventoryDto(
-                            id = it[InventoryTable.id],
-                            productId = it[InventoryTable.productId],
-                            quantity = it[InventoryTable.quantity],
-                            minimumQuantity = it[InventoryTable.minimumQuantity],
-                            lastUpdated = it[InventoryTable.lastUpdated]?.toString()
-                        )
-                    }
-            } ?: return@get call.respond(HttpStatusCode.NotFound, "Inventory not found")
+            val item = InventoryRepository.getById(id)
+                ?: return@get call.respond(HttpStatusCode.NotFound, "Inventory not found")
 
-            call.respond(item)
+            call.respond(InventoryDto(
+                id = item.id,
+                productId = item.productId,
+                quantity = item.quantity,
+                minimumQuantity = item.minimumQuantity,
+                lastUpdated = item.lastUpdated?.toString()
+            ))
         }
 
         put("{id}") {
@@ -74,41 +45,26 @@ fun Routing.inventoryRoutes() {
                 ?: return@put call.respond(HttpStatusCode.BadRequest, "Invalid id")
             val req = call.receive<InventoryUpdateRequest>()
 
-            val rows = transaction {
-                InventoryTable.update({ InventoryTable.id eq id }) {
-                    it[quantity] = req.quantity
-                    it[minimumQuantity] = req.minimumQuantity
-                }
-            }
+            val rows = InventoryRepository.update(id, req.quantity, req.minimumQuantity)
             if (rows == 0) {
                 return@put call.respond(HttpStatusCode.NotFound, "Inventory not found")
             }
 
-            val updated = transaction {
-                InventoryTable
-                    .select { InventoryTable.id eq id }
-                    .single()
-                    .let {
-                        InventoryDto(
-                            id = it[InventoryTable.id],
-                            productId = it[InventoryTable.productId],
-                            quantity = it[InventoryTable.quantity],
-                            minimumQuantity = it[InventoryTable.minimumQuantity],
-                            lastUpdated = it[InventoryTable.lastUpdated]?.toString()
-                        )
-                    }
-            }
-
-            call.respond(updated)
+            val updated = InventoryRepository.getById(id)!!
+            call.respond(InventoryDto(
+                id = updated.id,
+                productId = updated.productId,
+                quantity = updated.quantity,
+                minimumQuantity = updated.minimumQuantity,
+                lastUpdated = updated.lastUpdated?.toString()
+            ))
         }
 
         delete("{id}") {
             val id = call.parameters["id"]?.toIntOrNull()
                 ?: return@delete call.respond(HttpStatusCode.BadRequest, "Invalid id")
 
-            val rows = transaction {
-                InventoryTable.deleteWhere { InventoryTable.id eq id }
-            }
+            val rows = InventoryRepository.delete(id)
             if (rows == 0) {
                 return@delete call.respond(HttpStatusCode.NotFound, "Inventory not found")
             }
