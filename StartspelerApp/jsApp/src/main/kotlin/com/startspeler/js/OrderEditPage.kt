@@ -104,7 +104,7 @@ val OrderEditPage = FC<OrderEditPageProps> { props ->
                 } catch (_: Throwable) {}
 
                 try {
-                    val klantenRes = window.fetch(b.trimEnd('/') + "/klanten").await()
+                    val klantenRes = window.fetch(b.trimEnd('/') + "/klanten/names").await()
                     if (klantenRes.ok) {
                         val klantenText = klantenRes.text().await()
                         val klantenList = json.decodeFromString<List<String>>(klantenText)

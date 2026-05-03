@@ -17,9 +17,11 @@ import io.ktor.server.request.receive
 fun Routing.tafelRoutes() {
     route("/tafels") {
         get {
-            // Return all tafel numbers as strings (e.g. "Tafel 1")
             val tafels = transaction {
-                TableModel.selectAll().map { "Tafel ${it[TableModel.number]}" }
+                TafelRepository.getAll()
+                    .filterNot { it.statusName.equals("inactief", ignoreCase = true) }
+                    .sortedBy { it.number }
+                    .map { "Tafel ${it.number}" }
             }
             call.respond(tafels)
         }
