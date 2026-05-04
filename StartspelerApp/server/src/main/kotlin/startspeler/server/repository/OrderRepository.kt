@@ -38,7 +38,8 @@ object OrderRepository {
 
     private fun buildOrderOverviewItem(orderRow: ResultRow): OrderOverzichtItem {
         val orderId = orderRow[Order.id]
-        val clientName = User.select { User.id eq orderRow[Order.userId] }
+        val userId = orderRow[Order.userId]
+        val clientName = User.select { User.id eq userId }
             .singleOrNull()?.get(User.name) ?: "Onbekend"
         val tableNumber = TableModel.select { TableModel.id eq orderRow[Order.tableId] }
             .singleOrNull()?.get(TableModel.number) ?: 0
@@ -63,6 +64,13 @@ object OrderRepository {
         val canDelete = statusId == STATUS_AANGEMAAKT
         val canCheckout = statusId == STATUS_AFGELEVERD
 
+        val groupId = User.select { User.id eq userId }.singleOrNull()?.get(User.groupId)
+        val discountPct = if (groupId != null)
+            Group.select { Group.id eq groupId }.singleOrNull()?.get(Group.discount) ?: 0f
+        else 0f
+        val totalPrice = orderRow[Order.totalPrice]
+        val priceAfterDiscount = if (discountPct > 0f) totalPrice * (1f - discountPct / 100f) else totalPrice
+
         return OrderOverzichtItem(
             id = orderId,
             tableNumber = tableNumber,
@@ -75,7 +83,9 @@ object OrderRepository {
             canEdit = canEdit,
             canDelete = canDelete,
             canCheckout = canCheckout,
-            totalPrice = orderRow[Order.totalPrice],
+            totalPrice = totalPrice,
+            priceAfterDiscount = if (discountPct > 0f) priceAfterDiscount else null,
+            discountPercentage = if (discountPct > 0f) discountPct else null,
             clientName = clientName,
             placedByStaff = orderRow[Order.isPlacedByStaff],
             orderitems = items,
@@ -287,17 +297,31 @@ object OrderRepository {
     }
 
     fun getOpenOrdersForClient(clientName: String): ClientOpenOrdersSummary? = transaction {
-        val userId = User.select { User.name eq clientName }.singleOrNull()?.get(User.id) ?: return@transaction null
+        val userRow = User.select { User.name eq clientName }.singleOrNull() ?: return@transaction null
+        val userId = userRow[User.id]
+        val groupId = userRow[User.groupId]
+        val discountPct = if (groupId != null) {
+            Group.select { Group.id eq groupId }.singleOrNull()?.get(Group.discount) ?: 0f
+        } else 0f
+
         val openOrders = Order.select {
             (Order.userId eq userId) and (Order.statusId neq STATUS_BETAALD)
         }.map { buildOrderOverviewItem(it) }
             .filter { it.statusId in statusFlow && it.statusId != STATUS_BETAALD }
 
+        val totalOpen = openOrders.sumOf { it.totalPrice.toDouble() }.toFloat()
+        val totalCheckout = openOrders.filter { it.canCheckout }.sumOf { it.totalPrice.toDouble() }.toFloat()
+        val totalOpenAfterDiscount = openOrders.sumOf { (it.priceAfterDiscount ?: it.totalPrice).toDouble() }.toFloat()
+        val totalCheckoutAfterDiscount = openOrders.filter { it.canCheckout }.sumOf { (it.priceAfterDiscount ?: it.totalPrice).toDouble() }.toFloat()
+
         ClientOpenOrdersSummary(
             clientName = clientName,
             orders = openOrders,
-            totalOpenAmount = openOrders.sumOf { it.totalPrice.toDouble() }.toFloat(),
-            totalCheckoutableAmount = openOrders.filter { it.canCheckout }.sumOf { it.totalPrice.toDouble() }.toFloat()
+            totalOpenAmount = totalOpen,
+            totalCheckoutableAmount = totalCheckout,
+            totalOpenAmountAfterDiscount = totalOpenAfterDiscount,
+            totalCheckoutableAmountAfterDiscount = totalCheckoutAfterDiscount,
+            discountPercentage = if (discountPct > 0f) discountPct else null
         )
     }
 

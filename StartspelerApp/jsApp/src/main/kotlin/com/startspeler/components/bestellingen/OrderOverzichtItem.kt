@@ -12,6 +12,8 @@ import react.Props
 import react.create
 import react.useState
 
+private fun Float.fmt(): String { val n: dynamic = this; return n.toFixed(2) as String }
+
 external interface OrderOverzichtItemProps : Props {
     var order: OrderOverzichtItem
     var isOpen: Boolean
@@ -30,6 +32,9 @@ val OrderOverzichtItem = FC<OrderOverzichtItemProps> { props ->
     val (showCheckoutModal, setShowCheckoutModal) = useState(false)
     val (showDeleteModal, setShowDeleteModal) = useState(false)
     val canRenderDelete = props.canDelete && order.canDelete
+
+    val discountPct = order.discountPercentage
+    val afterDiscount = order.priceAfterDiscount ?: order.totalPrice
 
     Accordion {
         expanded = isOpen
@@ -67,14 +72,33 @@ val OrderOverzichtItem = FC<OrderOverzichtItemProps> { props ->
                 order.orderitems.forEach { item ->
                     Typography {
                         sx = js("{ fontSize: '0.9rem' }")
-                        +"${item.product} x ${item.quantity} (€ ${item.price})"
+                        +"${item.product} x ${item.quantity} (€ ${item.price.fmt()})"
                     }
                 }
                 Box {
                     sx = js("{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: '16px', paddingTop: '12px', borderTop: '2px solid #1976d2', width: 'calc(100% - 24px)', marginLeft: '12px' }")
-                    Typography {
-                        sx = js("{ fontWeight: 600, fontSize: '1rem', color: '#1976d2' }")
-                        +"Totaal: € ${order.totalPrice}"
+                    Box {
+                        sx = js("{ display: 'flex', flexDirection: 'column', gap: '2px' }")
+                        if (discountPct != null && discountPct > 0f) {
+                            Typography {
+                                sx = js("{ fontSize: '0.95rem', color: '#444' }")
+                                +"Totaal bedrag: € ${order.totalPrice.fmt()}"
+                            }
+                            Typography {
+                                sx = js("{ fontSize: '0.95rem', color: '#e65100' }")
+                                +"Korting (${discountPct.toInt()}%): - € ${(order.totalPrice - afterDiscount).fmt()}"
+                            }
+                            Box { sx = js("{ borderTop: '1px solid #bdbdbd', marginTop: '4px', marginBottom: '4px' }") }
+                            Typography {
+                                sx = js("{ fontWeight: 700, fontSize: '1rem', color: '#1976d2' }")
+                                +"Resterend te betalen: € ${afterDiscount.fmt()}"
+                            }
+                        } else {
+                            Typography {
+                                sx = js("{ fontWeight: 600, fontSize: '1rem', color: '#1976d2' }")
+                                +"Totaal: € ${order.totalPrice.fmt()}"
+                            }
+                        }
                     }
                     Box {
                         sx = js("{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'flex-end' }")
@@ -92,7 +116,7 @@ val OrderOverzichtItem = FC<OrderOverzichtItemProps> { props ->
                         }
                         if (order.canGoToNextStatus && order.nextStatusLabel != null) {
                             mui.material.Button {
-                                variant = if (order.canCheckout) mui.material.ButtonVariant.contained else mui.material.ButtonVariant.contained
+                                variant = mui.material.ButtonVariant.contained
                                 color = if (order.canCheckout) mui.material.ButtonColor.primary else mui.material.ButtonColor.secondary
                                 size = mui.material.Size.small
                                 onClick = {
@@ -132,10 +156,17 @@ val OrderOverzichtItem = FC<OrderOverzichtItemProps> { props ->
             }
         }
 
+        // Checkout modal with discount breakdown
+        val checkoutDescription = if (discountPct != null && discountPct > 0f) {
+            "Totaal bedrag: € ${order.totalPrice.fmt()}\nKorting (${discountPct.toInt()}%): - € ${(order.totalPrice - afterDiscount).fmt()}\n---\nResterend te betalen: € ${afterDiscount.fmt()}"
+        } else {
+            "Totaal bedrag: € ${order.totalPrice.fmt()}"
+        }
+
         BestellingActieModal {
             open = showCheckoutModal
             title = "Bent u zeker dat u deze bestelling wilt afrekenen?"
-            description = "Totale prijs: € ${order.totalPrice}"
+            description = checkoutDescription
             confirmLabel = "Bevestigen"
             loading = false
             error = null

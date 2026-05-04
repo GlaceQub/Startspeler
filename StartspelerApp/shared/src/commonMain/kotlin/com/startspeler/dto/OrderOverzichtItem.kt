@@ -16,6 +16,8 @@ data class OrderOverzichtItem(
     val canDelete: Boolean = true,
     val canCheckout: Boolean = false,
     val totalPrice: Float,
+    val priceAfterDiscount: Float? = null,
+    val discountPercentage: Float? = null,
     val clientName: String,
     val placedByStaff: Boolean,
     val orderitems: List<OverzichtOrderitem>,
@@ -27,7 +29,10 @@ data class ClientOpenOrdersSummary(
     val clientName: String,
     val orders: List<OrderOverzichtItem>,
     val totalOpenAmount: Float,
-    val totalCheckoutableAmount: Float
+    val totalCheckoutableAmount: Float,
+    val totalOpenAmountAfterDiscount: Float? = null,
+    val totalCheckoutableAmountAfterDiscount: Float? = null,
+    val discountPercentage: Float? = null
 )
 
 @Serializable

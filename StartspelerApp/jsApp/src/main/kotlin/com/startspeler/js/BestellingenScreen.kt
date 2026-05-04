@@ -112,7 +112,8 @@ val BestellingenScreen = FC<Props> {
             val response = window.fetch(url.trimEnd('/') + "/klanten").await()
             if (response.ok) {
                 val text = response.text().await()
-                setClientOptions(json.decodeFromString<List<String>>(text))
+                val arr = JSON.parse<Array<dynamic>>(text)
+                setClientOptions(arr.map { it.name as String })
             }
         } catch (_: Throwable) {
         }
