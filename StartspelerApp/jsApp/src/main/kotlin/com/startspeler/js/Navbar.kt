@@ -63,15 +63,17 @@ val Navbar = FC<NavBarProps> { props ->
                     +"Bestel"
                 }
 
-                // KLANTEN knop
-                Button {
-                    onClick = { _ -> window.location.hash = "#/klanten" }
-                    variant = ButtonVariant.contained
-                    disableElevation = true
-                    val cls = if (current == "klanten") "nav-button active" else "nav-button"
-                    asDynamic().className = cls
-                    if (current == "klanten") asDynamic()["aria-current"] = "page"
-                    +"Klanten"
+                // KLANTEN knop (optioneel, alleen zichtbaar voor ingelogde gebruikers)
+                if (isLoggedIn) {
+                    Button {
+                        onClick = { _ -> window.location.hash = "#/klanten" }
+                        variant = ButtonVariant.contained
+                        disableElevation = true
+                        val cls = if (current == "klanten") "nav-button active" else "nav-button"
+                        asDynamic().className = cls
+                        if (current == "klanten") asDynamic()["aria-current"] = "page"
+                        +"Klanten"
+                    }
                 }
 
                 // Inventory knop (optioneel, alleen zichtbaar voor ingelogde gebruikers)
