@@ -139,9 +139,9 @@ val KlantenPage = FC<KlantenPageProps> { props ->
                 }
 
                 Button {
+                    asDynamic().className = "btnPrimary"
                     variant = ButtonVariant.contained
                     asDynamic().size = "small"
-                    sx = js("{ height: 40, minWidth: 110, fontWeight: 700, backgroundColor: '#2B3078' }")
                     onClick = { props.onSearch(filterName.trim(), filterEmail.trim()) }
                     +"Zoeken"
                 }

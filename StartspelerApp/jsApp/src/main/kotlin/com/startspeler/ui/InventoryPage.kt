@@ -41,8 +41,8 @@ val InventoryPage = FC<InventoryPageProps> { props ->
             asDynamic().className = "inventoryLeft"
 
             Box {
-                sx = js("{ pl: 2 }")
                 asDynamic().className = "inventoryHeader"
+                sx = js("{ padding: '16px', paddingBottom: 0 }")
                 PageTitleBar {
                     title = "Stock beheer"
                     rightContent = null
@@ -64,7 +64,7 @@ val InventoryPage = FC<InventoryPageProps> { props ->
                     sx = js("{ flex: '1 1 auto' }")
                 }
                 Button {
-                    asDynamic().className = "inventoryPrimaryBtn"
+                    asDynamic().className = "btnPrimary"
                     asDynamic().onClick = { window.location.hash = "#/product" }
                     +"Product beheer"
                 }

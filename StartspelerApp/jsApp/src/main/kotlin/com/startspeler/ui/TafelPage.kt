@@ -58,6 +58,7 @@ val TafelPage = FC<TafelPageProps> { props ->
                 }
 
                 Button {
+                    asDynamic().className = "btnPrimary"
                     variant = ButtonVariant.contained
                     onClick = { setOpen(true) }
                     +"Tafel toevoegen"
