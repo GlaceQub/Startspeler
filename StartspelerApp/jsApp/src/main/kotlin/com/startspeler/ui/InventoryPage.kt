@@ -44,7 +44,10 @@ val InventoryPage = FC<InventoryPageProps> { props ->
             Box {
                 sx = js("{ pl: 2 }")
                 asDynamic().className = "inventoryHeader"
-                Typography { asDynamic().variant = "h6"; +"Stock beheer" }
+                PageTitleBar {
+                    title = "Stock beheer"
+                    rightContent = null
+                }
             }
 
             Box {

@@ -49,7 +49,7 @@ val Navbar = FC<NavBarProps> { props ->
                     val cls = if (current == "login") "nav-button active" else "nav-button"
                     asDynamic().className = cls
                     if (current == "login") asDynamic()["aria-current"] = "page"
-                    +(if (isLoggedIn) "account" else "Login")
+                    +(if (isLoggedIn) "Account" else "Login")
                 }
 
                 // BESTEL knop
@@ -83,7 +83,7 @@ val Navbar = FC<NavBarProps> { props ->
                         val cls = if (current == "inventory") "nav-button active" else "nav-button"
                         asDynamic().className = cls
                         if (current == "inventory") asDynamic()["aria-current"] = "page"
-                        +"Stock"
+                        +"Voorraad"
                     }
                 }
 
@@ -120,7 +120,7 @@ val Navbar = FC<NavBarProps> { props ->
                         val cls = if (current == "tables") "nav-button active" else "nav-button"
                         asDynamic().className = cls
                         if (current == "tables") asDynamic()["aria-current"] = "page"
-                        +"Tables"
+                        +"Tafels"
                     }
                 }
             }

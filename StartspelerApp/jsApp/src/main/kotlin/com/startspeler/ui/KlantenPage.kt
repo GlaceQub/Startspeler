@@ -22,6 +22,7 @@ import mui.material.Typography
 import mui.system.Box
 import react.FC
 import react.Props
+import react.ReactNode
 import react.dom.onChange
 import react.useEffect
 import react.useMemo
@@ -73,254 +74,240 @@ val KlantenPage = FC<KlantenPageProps> { props ->
         .sortedBy { it.second.lowercase() }
 
     Box {
-        sx = js(
-            """({
-              width: '100vw',
-              minHeight: 'calc(100vh - 60px)',
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'flex-start',
-              pt: 3,
-              pb: 4,
-              boxSizing: 'border-box'
-            })"""
-        )
+        sx = js("{ display: 'flex', flexDirection: 'column', gap: '12px', padding: '16px', width: '100%', boxSizing: 'border-box' }")
+
+        PageTitleBar {
+            title = "Klanten"
+            rightContent = null
+        }
 
         Box {
             sx = js(
                 """({
-                  width: '100%',
-                  maxWidth: '1100px',
-                  px: 3,
-                  boxSizing: 'border-box'
+                  border: '1px solid rgba(43,48,120,0.14)',
+                  borderRadius: '12px',
+                  backgroundColor: '#ffffff',
+                  boxShadow: '0 1px 2px rgba(0,0,0,0.06)',
+                  px: 2,
+                  py: 2
                 })"""
             )
 
             Box {
                 sx = js(
                     """({
-                      border: '1px solid rgba(0,0,0,0.10)',
-                      borderRadius: '12px',
-                      backgroundColor: 'rgba(245,247,250,0.7)',
-                      px: 2,
-                      py: 2,
-                      mb: 2
+                      display: 'flex',
+                      justifyContent: 'flex-start',
+                      gap: 12,
+                      flexWrap: 'wrap',
+                      alignItems: 'flex-end'
                     })"""
                 )
 
                 Box {
-                    sx = js("{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 1 }")
+                    sx = js("{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 220 }")
+
                     Typography {
-                        asDynamic().variant = "h6"
-                        sx = js("{ fontWeight: 700, color: '#2B3078' }")
-                        +"Klanten"
+                        sx = js("{ fontSize: '0.8rem', fontWeight: 700, lineHeight: 1, color: 'rgba(43,48,120,0.85)', ml: 0.5 }")
+                        +"Naam"
+                    }
+
+                    TextField {
+                        label = ReactNode("Zoek op naam")
+                        value = filterName
+                        asDynamic().size = "small"
+                        onChange = { e -> setFilterName(e.target.asDynamic().value as String) }
+                        sx = js("{ backgroundColor: '#fff' }")
                     }
                 }
 
                 Box {
-                    sx = js(
-                        """({
-                          display: 'flex',
-                          justifyContent: 'flex-start',
-                          gap: 12,
-                          flexWrap: 'wrap',
-                          alignItems: 'center'
-                        })"""
-                    )
+                    sx = js("{ display: 'flex', flexDirection: 'column', gap: 6, minWidth: 220 }")
 
-                    Box {
-                        sx = js("{ display: 'flex', flexDirection: 'column', gap: 0 }")
-
-                        Typography {
-                            sx = js("{ fontSize: '0.8rem', fontWeight: 600, lineHeight: 1, color: 'rgba(0,0,0,0.65)', ml: 0.5, mt: 0, mb: 0, p: 0, display: 'block' }")
-                            +"Naam"
-                        }
-
-                        TextField {
-                            label = react.ReactNode("Zoek op naam")
-                            value = filterName
-                            asDynamic().size = "small"
-                            onChange = { e -> setFilterName(e.target.asDynamic().value as String) }
-                        }
+                    Typography {
+                        sx = js("{ fontSize: '0.8rem', fontWeight: 700, lineHeight: 1, color: 'rgba(43,48,120,0.85)', ml: 0.5 }")
+                        +"E-mail"
                     }
 
-                    Box {
-                        sx = js("{ display: 'flex', flexDirection: 'column', gap: 0 }")
-
-                        Typography {
-                            sx = js("{ fontSize: '0.8rem', fontWeight: 600, lineHeight: 1, color: 'rgba(0,0,0,0.65)', ml: 0.5, mt: 0, mb: 0, p: 0, display: 'block' }")
-                            +"E-mail"
-                        }
-
-                        TextField {
-                            label = react.ReactNode("Zoek op e-mail")
-                            value = filterEmail
-                            asDynamic().size = "small"
-                            onChange = { e -> setFilterEmail(e.target.asDynamic().value as String) }
-                        }
-                    }
-
-                    Button {
-                        variant = ButtonVariant.outlined
+                    TextField {
+                        label = ReactNode("Zoek op e-mail")
+                        value = filterEmail
                         asDynamic().size = "small"
-                        onClick = { props.onSearch(filterName.trim(), filterEmail.trim()) }
-                        +"Zoeken"
+                        onChange = { e -> setFilterEmail(e.target.asDynamic().value as String) }
+                        sx = js("{ backgroundColor: '#fff' }")
                     }
+                }
+
+                Button {
+                    variant = ButtonVariant.contained
+                    asDynamic().size = "small"
+                    sx = js("{ height: 40, minWidth: 110, fontWeight: 700, backgroundColor: '#2B3078' }")
+                    onClick = { props.onSearch(filterName.trim(), filterEmail.trim()) }
+                    +"Zoeken"
                 }
             }
+        }
 
-            if (props.loading) {
-                Box { sx = js("{ mt: 2 }"); CircularProgress {} }
-            } else if (props.error != null) {
-                Box { sx = js("{ mt: 2 }"); Alert { asDynamic().severity = "error"; +props.error!! } }
-            } else if (hasNoResults) {
-                Box {
-                    sx = js("{ mt: 2 }")
-                    Alert { asDynamic().severity = "info"; +"Geen klant met deze naam/e-mailadres gevonden in het systeem." }
+        if (props.loading) {
+            Box { sx = js("{ mt: 1 }"); CircularProgress {} }
+        } else if (props.error != null) {
+            Box { sx = js("{ mt: 1 }"); Alert { asDynamic().severity = "error"; +props.error!! } }
+        } else if (hasNoResults) {
+            Box {
+                sx = js("{ mt: 1 }")
+                Alert {
+                    asDynamic().severity = "info"
+                    +"Geen klant met deze naam/e-mailadres gevonden in het systeem."
                 }
-            } else {
-                Box {
-                    sx = js("{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 16 }")
+            }
+        } else {
+            Box {
+                sx = js(
+                    """({
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+                      gap: 4
+                    })"""
+                )
 
-                    props.items.forEach { u ->
-                        Card {
-                            key = u.id.toString()
-                            sx = js("{ borderRadius: '12px', border: '1px solid rgba(0,0,0,0.08)' }")
+                props.items.forEach { u ->
+                    Card {
+                        key = u.id.toString()
+                        sx = js("{ borderRadius: '12px', border: '1px solid rgba(0,0,0,0.08)' }")
 
-                            CardContent {
-                                sx = js("{ paddingBottom: '12px !important' }")
+                        CardContent {
+                            sx = js("{ paddingBottom: '12px !important' }")
 
-                                Typography {
-                                    asDynamic().component = "h3"
-                                    sx = js("{ margin: 0, fontWeight: 700, fontSize: '1.0rem' }")
-                                    +u.name
+                            Typography {
+                                asDynamic().component = "h3"
+                                sx = js("{ margin: 0, fontWeight: 700, fontSize: '1.0rem' }")
+                                +u.name
+                            }
+
+                            Typography { sx = js("{ mt: 0.5, color: 'rgba(0,0,0,0.7)' }"); +(u.email ?: "—") }
+                            val groupName = props.groupNameById[u.groupId] ?: u.groupId.toString()
+                            Typography { sx = js("{ mt: 0.5, color: 'rgba(0,0,0,0.75)' }"); +"Groep: $groupName" }
+
+                            Box {
+                                sx = js("{ display: 'flex', justifyContent: 'flex-end', gap: 0.5, mt: 1 }")
+
+                                IconButton {
+                                    color = IconButtonColor.primary
+                                    asDynamic().size = "small"
+                                    onClick = {
+                                        setEditId(u.id)
+                                        setEditName(u.name)
+                                        setEditEmail(u.email ?: "")
+                                        setEditGroupId(u.groupId)
+                                        setEditOpen(true)
+                                    }
+                                    Edit()
                                 }
 
-                                Typography { sx = js("{ mt: 0.5, color: 'rgba(0,0,0,0.7)' }"); +(u.email ?: "—") }
-                                val groupName = props.groupNameById[u.groupId] ?: u.groupId.toString()
-                                Typography { sx = js("{ mt: 0.5, color: 'rgba(0,0,0,0.75)' }"); +"Groep: $groupName" }
-
-                                Box {
-                                    sx = js("{ display: 'flex', justifyContent: 'flex-end', gap: 0.5, mt: 1 }")
-
-                                    IconButton {
-                                        color = IconButtonColor.primary
-                                        asDynamic().size = "small"
-                                        onClick = {
-                                            setEditId(u.id)
-                                            setEditName(u.name)
-                                            setEditEmail(u.email ?: "")
-                                            setEditGroupId(u.groupId)
-                                            setEditOpen(true)
-                                        }
-                                        Edit()
+                                IconButton {
+                                    color = IconButtonColor.error
+                                    asDynamic().size = "small"
+                                    onClick = {
+                                        setDeleteId(u.id)
+                                        setDeleteOpen(true)
                                     }
-
-                                    IconButton {
-                                        color = IconButtonColor.error
-                                        asDynamic().size = "small"
-                                        onClick = {
-                                            setDeleteId(u.id)
-                                            setDeleteOpen(true)
-                                        }
-                                        Delete()
-                                    }
+                                    Delete()
                                 }
                             }
                         }
                     }
                 }
             }
+        }
 
-            Dialog {
-                open = editOpen
-                onClose = { _, _ -> setEditOpen(false) }
+        Dialog {
+            open = editOpen
+            onClose = { _, _ -> setEditOpen(false) }
 
-                DialogTitle { +"Klant aanpassen" }
+            DialogTitle { +"Klant aanpassen" }
 
-                DialogContent {
-                    TextField {
-                        label = react.ReactNode("Naam")
-                        value = editName
-                        asDynamic().size = "small"
-                        onChange = { e -> setEditName(e.target.asDynamic().value as String) }
-                        fullWidth = true
-                        margin = FormControlMargin.normal
-                    }
-
-                    TextField {
-                        label = react.ReactNode("E-mail (optioneel)")
-                        value = editEmail
-                        asDynamic().size = "small"
-                        onChange = { e -> setEditEmail(e.target.asDynamic().value as String) }
-                        fullWidth = true
-                        margin = FormControlMargin.normal
-                    }
-
-                    TextField {
-                        select = true
-                        label = react.ReactNode("Groep")
-                        value = (editGroupId ?: "").toString()
-                        asDynamic().size = "small"
-                        onChange = { e ->
-                            val v = e.target.asDynamic().value as String
-                            setEditGroupId(v.toIntOrNull())
-                        }
-                        fullWidth = true
-                        margin = FormControlMargin.normal
-
-                        groupOptions.forEach { (id, name) ->
-                            MenuItem {
-                                value = id.toString()
-                                +name
-                            }
-                        }
-                    }
+            DialogContent {
+                TextField {
+                    label = ReactNode("Naam")
+                    value = editName
+                    asDynamic().size = "small"
+                    onChange = { e -> setEditName(e.target.asDynamic().value as String) }
+                    fullWidth = true
+                    margin = FormControlMargin.normal
                 }
 
-                DialogActions {
-                    Button { asDynamic().size = "small"; onClick = { setEditOpen(false) }; +"Annuleren" }
-                    Button {
-                        asDynamic().size = "small"
-                        variant = ButtonVariant.contained
-                        onClick = {
-                            val id = editId
-                            if (id != null) {
-                                props.onUpdate(
-                                    id,
-                                    editName.trim(),
-                                    editEmail.trim().ifBlank { null },
-                                    editGroupId
-                                )
-                                setEditOpen(false)
-                            }
+                TextField {
+                    label = ReactNode("E-mail (optioneel)")
+                    value = editEmail
+                    asDynamic().size = "small"
+                    onChange = { e -> setEditEmail(e.target.asDynamic().value as String) }
+                    fullWidth = true
+                    margin = FormControlMargin.normal
+                }
+
+                TextField {
+                    select = true
+                    label = ReactNode("Groep")
+                    value = (editGroupId ?: "").toString()
+                    asDynamic().size = "small"
+                    onChange = { e ->
+                        val v = e.target.asDynamic().value as String
+                        setEditGroupId(v.toIntOrNull())
+                    }
+                    fullWidth = true
+                    margin = FormControlMargin.normal
+
+                    groupOptions.forEach { (id, name) ->
+                        MenuItem {
+                            value = id.toString()
+                            +name
                         }
-                        +"Opslaan"
                     }
                 }
             }
 
-            Dialog {
-                open = deleteOpen
-                onClose = { _, _ -> setDeleteOpen(false) }
-
-                DialogTitle { +"Klant verwijderen?" }
-
-                DialogActions {
-                    Button { asDynamic().size = "small"; onClick = { setDeleteOpen(false) }; +"Annuleren" }
-                    Button {
-                        asDynamic().size = "small"
-                        color = ButtonColor.error
-                        variant = ButtonVariant.contained
-                        onClick = {
-                            val id = deleteId
-                            if (id != null) {
-                                props.onDelete(id)
-                                setDeleteOpen(false)
-                            }
+            DialogActions {
+                Button { asDynamic().size = "small"; onClick = { setEditOpen(false) }; +"Annuleren" }
+                Button {
+                    asDynamic().size = "small"
+                    variant = ButtonVariant.contained
+                    onClick = {
+                        val id = editId
+                        if (id != null) {
+                            props.onUpdate(
+                                id,
+                                editName.trim(),
+                                editEmail.trim().ifBlank { null },
+                                editGroupId
+                            )
+                            setEditOpen(false)
                         }
-                        +"Verwijderen"
                     }
+                    +"Opslaan"
+                }
+            }
+        }
+
+        Dialog {
+            open = deleteOpen
+            onClose = { _, _ -> setDeleteOpen(false) }
+
+            DialogTitle { +"Klant verwijderen?" }
+
+            DialogActions {
+                Button { asDynamic().size = "small"; onClick = { setDeleteOpen(false) }; +"Annuleren" }
+                Button {
+                    asDynamic().size = "small"
+                    color = ButtonColor.error
+                    variant = ButtonVariant.contained
+                    onClick = {
+                        val id = deleteId
+                        if (id != null) {
+                            props.onDelete(id)
+                            setDeleteOpen(false)
+                        }
+                    }
+                    +"Verwijderen"
                 }
             }
         }

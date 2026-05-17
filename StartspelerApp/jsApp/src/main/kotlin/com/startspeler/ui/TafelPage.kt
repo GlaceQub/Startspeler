@@ -16,7 +16,6 @@ import mui.material.IconButton
 import mui.material.IconButtonColor
 import mui.material.Switch
 import mui.material.TextField
-import mui.material.Typography
 import mui.system.Box
 import react.FC
 import react.Props
@@ -52,7 +51,12 @@ val TafelPage = FC<TafelPageProps> { props ->
 
             Box {
                 sx = js("{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }")
-                Typography { asDynamic().variant = "h6"; +"Tafels" }
+
+                PageTitleBar {
+                    title = "Tafels"
+                    rightContent = null
+                }
+
                 Button {
                     variant = ButtonVariant.contained
                     onClick = { setOpen(true) }
@@ -114,7 +118,7 @@ val TafelPage = FC<TafelPageProps> { props ->
                                     "tafelCard " + if (t.active) "tafelCard--active" else "tafelCard--inactive"
 
                                 CardContent {
-                                    Typography {
+                                    mui.material.Typography {
                                         asDynamic().component = "h3"
                                         asDynamic().className = "tafelCardTitle"
                                         +"Tafel ${t.number}"
@@ -123,7 +127,7 @@ val TafelPage = FC<TafelPageProps> { props ->
                                     Box {
                                         sx = js("{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mt: 1 }")
 
-                                        Typography {
+                                        mui.material.Typography {
                                             asDynamic().component = "div"
                                             asDynamic().className = "tafelCardStatus"
                                             +if (t.active) "Actief" else "Inactief"
