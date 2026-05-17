@@ -1,14 +1,13 @@
 package com.startspeler.ui
 
+import com.startspeler.util.formatUtcTimestampForDisplay
 import kotlinx.browser.window
 import mui.material.*
 import mui.system.Box
 import mui.icons.material.Edit
-import mui.icons.material.Delete
 import react.FC
 import react.Props
 import react.useState
-import react.dom.html.ReactHTML.div
 
 external interface InventoryView {
     var id: Int
@@ -148,16 +147,41 @@ val InventoryPage = FC<InventoryPageProps> { props ->
                 sx = js("{ m: 2 }")
 
                 if (selected == null) {
-                    div { asDynamic().className = "inventoryDetailsTitle"; +"Selecteer een inventory item" }
-                    div { +"Klik links op een item om details te zien of kies 'Nieuw Inventory item'." }
-                } else {
-                    ListItemText {
-                        asDynamic().primary = selected.productName ?: "Product #${selected.productId}"
-                        asDynamic().secondary = "Inventory id: ${selected.id}"
+                    Typography {
+                        asDynamic().className = "inventoryDetailsTitle"
+                        asDynamic().variant = "h6"
+                        +"Selecteer een product"
                     }
-                    div { asDynamic().className = "inventoryDetailsRow"; +"Voorraad: ${selected.quantity}" }
-                    div { asDynamic().className = "inventoryDetailsRow"; +"Minimale voorraad: ${selected.minimumQuantity ?: "-"}" }
-                    div { asDynamic().className = "inventoryDetailsRow"; +"Laatst bijgewerkt: ${selected.lastUpdated ?: "-"}" }
+                    Typography {
+                        asDynamic().variant = "body1"
+                        +"Klik links op een item om details te zien of kies 'Nieuw Inventory item'."
+                    }
+                } else {
+                    Typography {
+                        asDynamic().className = "inventoryDetailsTitle"
+                        asDynamic().variant = "h6"
+                        +(selected.productName ?: "Product ${selected.productId}")
+                    }
+                    Typography {
+                        asDynamic().className = "inventoryDetailsRow"
+                        asDynamic().variant = "body2"
+                        +"Product id: ${selected.productId}"
+                    }
+                    Typography {
+                        asDynamic().className = "inventoryDetailsRow"
+                        asDynamic().variant = "body1"
+                        +"Voorraad: ${selected.quantity}"
+                    }
+                    Typography {
+                        asDynamic().className = "inventoryDetailsRow"
+                        asDynamic().variant = "body1"
+                        +"Minimale voorraad: ${selected.minimumQuantity ?: "-"}"
+                    }
+                    Typography {
+                        asDynamic().className = "inventoryDetailsRow"
+                        asDynamic().variant = "body1"
+                        +"Laatst bijgewerkt: ${formatUtcTimestampForDisplay(selected.lastUpdated)}"
+                    }
                     Box {
                         sx = js("{ display: 'flex', gap: 8, marginTop: 12 }")
                         Button { asDynamic().className = "inventoryPrimaryBtn"; asDynamic().onClick = { props.onEdit(selected) }; +"Bewerk" }

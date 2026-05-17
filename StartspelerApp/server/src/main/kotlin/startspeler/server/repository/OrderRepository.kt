@@ -8,12 +8,11 @@ import com.startspeler.dto.OrderItemRequest
 import com.startspeler.dto.OrderStatusTransitionResponse
 import com.startspeler.dto.OverzichtOrderitem
 import db.tables.*
-import kotlinx.datetime.Clock
 import kotlinx.datetime.LocalDateTime
-import kotlinx.datetime.TimeZone
-import kotlinx.datetime.toLocalDateTime
 import org.jetbrains.exposed.sql.*
 import org.jetbrains.exposed.sql.transactions.transaction
+import utils.DbUtcNow
+import utils.toUtcIsoInstantString
 
 object OrderRepository {
     private const val STATUS_IN_BEHANDELING = 3
@@ -38,7 +37,8 @@ object OrderRepository {
 
     private fun buildOrderOverviewItem(orderRow: ResultRow): OrderOverzichtItem {
         val orderId = orderRow[Order.id]
-        val clientName = User.select { User.id eq orderRow[Order.userId] }
+        val userId = orderRow[Order.userId]
+        val clientName = User.select { User.id eq userId }
             .singleOrNull()?.get(User.name) ?: "Onbekend"
         val tableNumber = TableModel.select { TableModel.id eq orderRow[Order.tableId] }
             .singleOrNull()?.get(TableModel.number) ?: 0
@@ -63,6 +63,13 @@ object OrderRepository {
         val canDelete = statusId == STATUS_AANGEMAAKT
         val canCheckout = statusId == STATUS_AFGELEVERD
 
+        val groupId = User.select { User.id eq userId }.singleOrNull()?.get(User.groupId)
+        val discountPct = if (groupId != null)
+            Group.select { Group.id eq groupId }.singleOrNull()?.get(Group.discount) ?: 0f
+        else 0f
+        val totalPrice = orderRow[Order.totalPrice]
+        val priceAfterDiscount = if (discountPct > 0f) totalPrice * (1f - discountPct / 100f) else totalPrice
+
         return OrderOverzichtItem(
             id = orderId,
             tableNumber = tableNumber,
@@ -75,11 +82,13 @@ object OrderRepository {
             canEdit = canEdit,
             canDelete = canDelete,
             canCheckout = canCheckout,
-            totalPrice = orderRow[Order.totalPrice],
+            totalPrice = totalPrice,
+            priceAfterDiscount = if (discountPct > 0f) priceAfterDiscount else null,
+            discountPercentage = if (discountPct > 0f) discountPct else null,
             clientName = clientName,
             placedByStaff = orderRow[Order.isPlacedByStaff],
             orderitems = items,
-            createdAt = orderRow[Order.createdAt].toString()
+            createdAt = orderRow[Order.createdAt].toUtcIsoInstantString()
         )
     }
 
@@ -125,12 +134,13 @@ object OrderRepository {
         isPlacedByStaff: Boolean,
         items: List<OrderItemRequest>
     ): AddResult {
-        val now = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
+        val now = DbUtcNow()
+        val sortedItems = items.sortedBy { it.productId }
 
         return transaction {
             // Atomische stock check: controleer eerst alle items
             val outOfStock = mutableListOf<String>()
-            items.forEach { item ->
+            sortedItems.forEach { item ->
                 val stock = Inventory.select { Inventory.productId eq item.productId }
                     .singleOrNull()?.get(Inventory.quantity) ?: 0
                 if (stock < item.quantity) {
@@ -155,7 +165,7 @@ object OrderRepository {
                 it[Order.remarks] = null
             } get Order.id
 
-            items.forEach { item ->
+            sortedItems.forEach { item ->
                 Orderitem.insert {
                     it[Orderitem.orderId] = orderId
                     it[Orderitem.productId] = item.productId
@@ -190,7 +200,8 @@ object OrderRepository {
         priceAfterDiscount: Float,
         items: List<OrderItemRequest>
     ): AddResult = transaction {
-        val now = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
+        val now = DbUtcNow()
+        val sortedItems = items.sortedBy { it.productId }
         val existingOrder = Order.select { Order.id eq orderId }.singleOrNull()
             ?: return@transaction AddResult.InsufficientStock(emptyList())
 
@@ -203,7 +214,7 @@ object OrderRepository {
             .mapValues { entry -> entry.value.sumOf { row -> row[Orderitem.quantity] } }
 
         val outOfStock = mutableListOf<String>()
-        items.forEach { item ->
+        sortedItems.forEach { item ->
             val currentStock = Inventory.select { Inventory.productId eq item.productId }
                 .singleOrNull()?.get(Inventory.quantity) ?: 0
             val previousReserved = prevByProduct[item.productId] ?: 0
@@ -218,7 +229,7 @@ object OrderRepository {
             return@transaction AddResult.InsufficientStock(outOfStock)
         }
 
-        val newByProduct = items.groupBy { it.productId }
+        val newByProduct = sortedItems.groupBy { it.productId }
             .mapValues { entry -> entry.value.sumOf { it.quantity } }
         val allProductIds = (prevByProduct.keys + newByProduct.keys).toSet()
 
@@ -245,7 +256,7 @@ object OrderRepository {
         }
 
         Orderitem.deleteWhere { SqlExpressionBuilder.run { Orderitem.orderId eq orderId } }
-        items.forEach { item ->
+        sortedItems.forEach { item ->
             Orderitem.insert {
                 it[Orderitem.orderId] = orderId
                 it[Orderitem.productId] = item.productId
@@ -287,17 +298,31 @@ object OrderRepository {
     }
 
     fun getOpenOrdersForClient(clientName: String): ClientOpenOrdersSummary? = transaction {
-        val userId = User.select { User.name eq clientName }.singleOrNull()?.get(User.id) ?: return@transaction null
+        val userRow = User.select { User.name eq clientName }.singleOrNull() ?: return@transaction null
+        val userId = userRow[User.id]
+        val groupId = userRow[User.groupId]
+        val discountPct = if (groupId != null) {
+            Group.select { Group.id eq groupId }.singleOrNull()?.get(Group.discount) ?: 0f
+        } else 0f
+
         val openOrders = Order.select {
             (Order.userId eq userId) and (Order.statusId neq STATUS_BETAALD)
         }.map { buildOrderOverviewItem(it) }
             .filter { it.statusId in statusFlow && it.statusId != STATUS_BETAALD }
 
+        val totalOpen = openOrders.sumOf { it.totalPrice.toDouble() }.toFloat()
+        val totalCheckout = openOrders.filter { it.canCheckout }.sumOf { it.totalPrice.toDouble() }.toFloat()
+        val totalOpenAfterDiscount = openOrders.sumOf { (it.priceAfterDiscount ?: it.totalPrice).toDouble() }.toFloat()
+        val totalCheckoutAfterDiscount = openOrders.filter { it.canCheckout }.sumOf { (it.priceAfterDiscount ?: it.totalPrice).toDouble() }.toFloat()
+
         ClientOpenOrdersSummary(
             clientName = clientName,
             orders = openOrders,
-            totalOpenAmount = openOrders.sumOf { it.totalPrice.toDouble() }.toFloat(),
-            totalCheckoutableAmount = openOrders.filter { it.canCheckout }.sumOf { it.totalPrice.toDouble() }.toFloat()
+            totalOpenAmount = totalOpen,
+            totalCheckoutableAmount = totalCheckout,
+            totalOpenAmountAfterDiscount = totalOpenAfterDiscount,
+            totalCheckoutableAmountAfterDiscount = totalCheckoutAfterDiscount,
+            discountPercentage = if (discountPct > 0f) discountPct else null
         )
     }
 
@@ -342,16 +367,22 @@ object OrderRepository {
         updated > 0
     }
 
-    fun checkoutOpenOrdersForClient(clientName: String): BulkCheckoutResponse = transaction {
+    fun checkoutOpenOrdersForClient(clientName: String, fixedDiscountAmount: Float? = null): BulkCheckoutResponse = transaction {
         val summary = getOpenOrdersForClient(clientName)
             ?: return@transaction BulkCheckoutResponse(success = false, error = "Klant niet gevonden")
+
+        val normalizedFixedDiscount = (fixedDiscountAmount ?: 0f).coerceAtLeast(0f)
+        val checkoutBaseAmount = summary.totalCheckoutableAmountAfterDiscount ?: summary.totalCheckoutableAmount
+        val finalCheckoutAmount = (checkoutBaseAmount - normalizedFixedDiscount).coerceAtLeast(0f)
 
         val checkoutableOrders = summary.orders.filter { it.statusId == STATUS_AFGELEVERD }
         if (checkoutableOrders.isEmpty()) {
             return@transaction BulkCheckoutResponse(
                 success = false,
                 summary = summary,
-                error = "Geen af te rekenen bestellingen voor deze klant"
+                error = "Geen af te rekenen bestellingen voor deze klant",
+                appliedFixedDiscountAmount = normalizedFixedDiscount,
+                finalCheckoutAmount = finalCheckoutAmount
             )
         }
 
@@ -377,7 +408,9 @@ object OrderRepository {
             success = updatedOrderIds.isNotEmpty(),
             summary = updatedSummary,
             updatedOrderIds = updatedOrderIds,
-            error = if (updatedOrderIds.isEmpty()) "Geen bestellingen aangepast" else null
+            error = if (updatedOrderIds.isEmpty()) "Geen bestellingen aangepast" else null,
+            appliedFixedDiscountAmount = normalizedFixedDiscount,
+            finalCheckoutAmount = finalCheckoutAmount
         )
     }
 
@@ -386,7 +419,7 @@ object OrderRepository {
     }
 
     fun deleteOrder(orderId: Int): DeleteOrderResponse = transaction {
-        val now = Clock.System.now().toLocalDateTime(TimeZone.currentSystemDefault())
+        val now = DbUtcNow()
         val orderRow = Order.select { Order.id eq orderId }.singleOrNull()
             ?: return@transaction DeleteOrderResponse(success = false, error = "Order niet gevonden")
 
