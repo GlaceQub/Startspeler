@@ -10,7 +10,19 @@ import io.ktor.server.auth.jwt.*
 import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
+import kotlinx.serialization.Serializable
 import startspeler.server.repository.OrderRepository
+
+@Serializable
+private data class OrderCreatedResponse(
+    val orderId: Int
+)
+
+@Serializable
+private data class OrderErrorResponse(
+    val error: String,
+    val products: List<String> = emptyList()
+)
 
 fun Routing.orderRoutes() {
     route("/order") {
@@ -32,7 +44,7 @@ fun Routing.orderRoutes() {
 
         post("/checkout-client") {
             val req = call.receive<BulkCheckoutRequest>()
-            val result = OrderRepository.checkoutOpenOrdersForClient(req.clientName)
+            val result = OrderRepository.checkoutOpenOrdersForClient(req.clientName, req.fixedDiscountAmount)
             if (result.success) {
                 call.respond(HttpStatusCode.OK, result)
             } else {
@@ -50,33 +62,40 @@ fun Routing.orderRoutes() {
         }
 
         post("/add") {
-            val req = call.receive<PlaceOrderRequest>()
+            try {
+                val req = call.receive<PlaceOrderRequest>()
+                if (req.items.isEmpty()) {
+                    return@post call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Geen producten in de bestelling"))
+                }
 
-            val userId = OrderRepository.getUserIdByName(req.klant)
-                ?: return@post call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Klant niet gevonden"))
+                val userId = OrderRepository.getUserIdByName(req.klant)
+                    ?: return@post call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Klant niet gevonden"))
 
-            val tafelNum = req.tafel.filter { it.isDigit() }.toIntOrNull()
-                ?: return@post call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Ongeldig tafelnummer"))
+                val tafelNum = req.tafel.filter { it.isDigit() }.toIntOrNull()
+                    ?: return@post call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Ongeldig tafelnummer"))
 
-            val tableId = OrderRepository.getTableIdByNumber(tafelNum)
-                ?: return@post call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Tafel niet gevonden"))
+                val tableId = OrderRepository.getTableIdByNumber(tafelNum)
+                    ?: return@post call.respond(HttpStatusCode.BadRequest, mapOf("error" to "Tafel niet gevonden"))
 
-            val totalPrice = req.items.sumOf { it.price.toDouble() * it.quantity.toDouble() }.toFloat()
+                val totalPrice = req.items.sumOf { it.price.toDouble() * it.quantity.toDouble() }.toFloat()
 
-            val groupDiscount = OrderRepository.getGroupDiscount(userId)
-            val priceAfterDiscount = if (groupDiscount > 0.0f) {
-                totalPrice * (1.0f - groupDiscount / 100.0f)
-            } else totalPrice
+                val groupDiscount = OrderRepository.getGroupDiscount(userId)
+                val priceAfterDiscount = if (groupDiscount > 0.0f) {
+                    totalPrice * (1.0f - groupDiscount / 100.0f)
+                } else totalPrice
 
-            val principal = call.principal<JWTPrincipal>()
-            val isPlacedByStaff = principal != null
+                val principal = call.principal<JWTPrincipal>()
+                val isPlacedByStaff = principal != null
 
-            val orderId = OrderRepository.add(userId, tableId, totalPrice, priceAfterDiscount, isPlacedByStaff, req.items)
-            when (orderId) {
-                is OrderRepository.AddResult.Success ->
-                    call.respond(HttpStatusCode.Created, mapOf("orderId" to orderId.orderId))
-                is OrderRepository.AddResult.InsufficientStock ->
-                    call.respond(HttpStatusCode.Conflict, mapOf("error" to "insufficient_stock", "products" to orderId.productNames))
+                when (val orderId = OrderRepository.add(userId, tableId, totalPrice, priceAfterDiscount, isPlacedByStaff, req.items)) {
+                    is OrderRepository.AddResult.Success ->
+                        call.respond(HttpStatusCode.Created, OrderCreatedResponse(orderId.orderId))
+                    is OrderRepository.AddResult.InsufficientStock ->
+                        call.respond(HttpStatusCode.Conflict, OrderErrorResponse(error = "insufficient_stock", products = orderId.productNames))
+                }
+            } catch (t: Throwable) {
+                t.printStackTrace()
+                call.respond(HttpStatusCode.InternalServerError, OrderErrorResponse(error = "Bestelling plaatsen mislukt op de server"))
             }
         }
 
@@ -104,13 +123,13 @@ fun Routing.orderRoutes() {
                 is OrderRepository.AddResult.Success -> {
                     val updatedOrder = OrderRepository.getById(res.orderId)
                     if (updatedOrder == null) {
-                        call.respond(HttpStatusCode.OK, mapOf("orderId" to res.orderId))
+                        call.respond(HttpStatusCode.OK, OrderCreatedResponse(res.orderId))
                     } else {
                         call.respond(HttpStatusCode.OK, updatedOrder)
                     }
                 }
                 is OrderRepository.AddResult.InsufficientStock -> {
-                    call.respond(HttpStatusCode.Conflict, mapOf("error" to "insufficient_stock", "products" to res.productNames))
+                    call.respond(HttpStatusCode.Conflict, OrderErrorResponse(error = "insufficient_stock", products = res.productNames))
                 }
             }
         }

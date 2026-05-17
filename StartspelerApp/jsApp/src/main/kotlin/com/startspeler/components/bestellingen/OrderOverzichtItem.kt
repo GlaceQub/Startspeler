@@ -1,6 +1,7 @@
 package com.startspeler.components.bestellingen
 
 import com.startspeler.dto.OrderOverzichtItem
+import com.startspeler.util.formatUtcTimestampForDisplay
 import mui.icons.material.ExpandMore
 import mui.material.Accordion
 import mui.material.AccordionDetails
@@ -29,7 +30,6 @@ val OrderOverzichtItem = FC<OrderOverzichtItemProps> { props ->
     val (isOpen, setOpen) = useState(props.isOpen)
     val (showStatusModal, setShowStatusModal) = useState(false)
     val (statusDirection, setStatusDirection) = useState<String?>(null)
-    val (showCheckoutModal, setShowCheckoutModal) = useState(false)
     val (showDeleteModal, setShowDeleteModal) = useState(false)
     val canRenderDelete = props.canDelete && order.canDelete
 
@@ -50,18 +50,7 @@ val OrderOverzichtItem = FC<OrderOverzichtItemProps> { props ->
                 Typography {
                     variant = mui.material.styles.TypographyVariant.body2
                     sx = js("{ width: '180px', minWidth: '180px', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis' }")
-                    val rawDate = order.createdAt
-                    val formatted = rawDate?.let {
-                        try {
-                            val parts = it.split("T", limit = 2)
-                            if (parts.size == 2) {
-                                val date = parts[0].split("-")
-                                val time = parts[1].substring(0, 5)
-                                if (date.size == 3) "$time ${date[2]}-${date[1]}-${date[0]}" else it
-                            } else it
-                        } catch (_: Exception) { it }
-                    } ?: ""
-                    +formatted
+                    +formatUtcTimestampForDisplay(order.createdAt, emptyFallback = "")
                 }
             }
         }
@@ -121,13 +110,13 @@ val OrderOverzichtItem = FC<OrderOverzichtItemProps> { props ->
                                 size = mui.material.Size.small
                                 onClick = {
                                     if (order.canCheckout) {
-                                        setShowCheckoutModal(true)
+                                        props.onCheckout?.invoke()
                                     } else {
                                         setStatusDirection("next")
                                         setShowStatusModal(true)
                                     }
                                 }
-                                +order.nextStatusLabel!!
+                                +(if (order.canCheckout) "Betalen" else order.nextStatusLabel!!)
                             }
                         }
                         mui.material.Button {
@@ -153,27 +142,6 @@ val OrderOverzichtItem = FC<OrderOverzichtItemProps> { props ->
                         }
                     }
                 }
-            }
-        }
-
-        // Checkout modal with discount breakdown
-        val checkoutDescription = if (discountPct != null && discountPct > 0f) {
-            "Totaal bedrag: € ${order.totalPrice.fmt()}\nKorting (${discountPct.toInt()}%): - € ${(order.totalPrice - afterDiscount).fmt()}\n---\nResterend te betalen: € ${afterDiscount.fmt()}"
-        } else {
-            "Totaal bedrag: € ${order.totalPrice.fmt()}"
-        }
-
-        BestellingActieModal {
-            open = showCheckoutModal
-            title = "Bent u zeker dat u deze bestelling wilt afrekenen?"
-            description = checkoutDescription
-            confirmLabel = "Bevestigen"
-            loading = false
-            error = null
-            onClose = { setShowCheckoutModal(false) }
-            onConfirm = {
-                setShowCheckoutModal(false)
-                props.onCheckout?.invoke()
             }
         }
 

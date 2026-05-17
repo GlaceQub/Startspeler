@@ -47,7 +47,9 @@ data class BulkCheckoutResponse(
     val success: Boolean,
     val summary: ClientOpenOrdersSummary? = null,
     val updatedOrderIds: List<Int> = emptyList(),
-    val error: String? = null
+    val error: String? = null,
+    val appliedFixedDiscountAmount: Float? = null,
+    val finalCheckoutAmount: Float? = null
 )
 
 @Serializable
@@ -66,7 +68,8 @@ data class UpdateOrderRequest(
 
 @Serializable
 data class BulkCheckoutRequest(
-    val clientName: String
+    val clientName: String,
+    val fixedDiscountAmount: Float? = null
 )
 
 @Serializable

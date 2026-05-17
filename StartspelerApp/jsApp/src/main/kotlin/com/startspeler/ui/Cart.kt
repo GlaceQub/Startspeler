@@ -22,9 +22,14 @@ external interface CartProps : Props {
     var onKlantChange: (String) -> Unit
     var onAddKlant: () -> Unit
     var submitLabel: String?
+    var isSubmitting: Boolean?
+    var conflictingProductNames: List<String>?
 }
 
 val Cart = FC<CartProps> { props ->
+    val isSubmitting = props.isSubmitting ?: false
+    val conflictingProductNames = props.conflictingProductNames ?: emptyList()
+
     Box {
         sx = js("{padding: '24px',display: 'flex', flexDirection: 'column', justifyContent: 'flex-start' }")
         Paper {
@@ -43,12 +48,22 @@ val Cart = FC<CartProps> { props ->
                     sx =
                         js("{ display: 'flex', flexDirection: 'column', gap: '8px', overflowY: 'auto', maxHeight: '60vh' }")
                     items.forEach { item ->
+                        val hasConflict = conflictingProductNames.contains(item.product.name)
                         Box {
                             sx =
                                 js("{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }")
-                            Typography {
-                                sx = js("{ fontWeight: 500 }")
-                                +"${item.product.name} x${item.quantity}"
+                            Box {
+                                sx = js("{ display: 'flex', flexDirection: 'column', gap: '2px' }")
+                                Typography {
+                                    sx = js("{ fontWeight: 500 }")
+                                    +"${item.product.name} x${item.quantity}"
+                                }
+                                if (hasConflict) {
+                                    Typography {
+                                        sx = js("{ color: '#555', fontSize: '0.85rem', fontWeight: 500 }")
+                                        +"Aangepast door systeem"
+                                    }
+                                }
                             }
                             IconButton {
                                 onClick = { _ -> props.onRemove(item) }
@@ -104,7 +119,7 @@ val Cart = FC<CartProps> { props ->
             sx =
                 js("{ marginTop: 'auto', marginTop: '16px', backgroundColor: 'var(--startspeler-primary)', color: 'white', fontWeight: 700, borderRadius: '20px' }")
             fullWidth = true
-            disabled = props.cartItems.isEmpty()
+            disabled = props.cartItems.isEmpty() || isSubmitting
             +(props.submitLabel ?: "Bestellen")
             onClick = { _ -> props.onOrder() }
         }

@@ -1,12 +1,20 @@
 package com.startspeler.components.bestellingen
 
 import com.startspeler.dto.ClientOpenOrdersSummary
+import com.startspeler.util.formatUtcTimestampForDisplay
 import mui.material.Box
 import mui.material.Button
+import mui.material.FormControl
+import mui.material.InputLabel
+import mui.material.MenuItem
 import mui.material.Modal
+import mui.material.Select
+import mui.material.TextField
 import mui.material.Typography
 import react.FC
 import react.Props
+import react.useEffect
+import react.useState
 
 private fun Float.fmt(): String { val n: dynamic = this; return n.toFixed(2) as String }
 
@@ -16,7 +24,7 @@ external interface BulkCheckoutModalProps : Props {
     var loading: Boolean
     var error: String?
     var onClose: () -> Unit
-    var onConfirm: () -> Unit
+    var onConfirm: (Float?) -> Unit
 }
 
 val BulkCheckoutModal = FC<BulkCheckoutModalProps> { props ->
@@ -24,23 +32,52 @@ val BulkCheckoutModal = FC<BulkCheckoutModalProps> { props ->
     if (!props.open || summary == null) return@FC
     val shouldScrollOrders = summary.orders.size > 3
     val hasDiscount = (summary.discountPercentage ?: 0f) > 0f
+    val (fixedDiscountOption, setFixedDiscountOption) = useState("none")
+    val (customDiscountInput, setCustomDiscountInput) = useState("")
+
+    useEffect(dependencies = arrayOf(props.open, summary.clientName)) {
+        if (props.open) {
+            setFixedDiscountOption("none")
+            setCustomDiscountInput("")
+        }
+    }
+
+    val checkoutBaseAmount = summary.totalCheckoutableAmountAfterDiscount ?: summary.totalCheckoutableAmount
+    val normalizedCustomDiscountInput = customDiscountInput.trim().replace(',', '.')
+    val parsedCustomDiscount = normalizedCustomDiscountInput.toFloatOrNull()
+    val customDiscountError = when {
+        fixedDiscountOption != "custom" -> null
+        normalizedCustomDiscountInput.isBlank() -> "Voer een positief bedrag in"
+        parsedCustomDiscount == null -> "Alleen positieve getallen zijn toegelaten"
+        parsedCustomDiscount <= 0f -> "Voer een positief bedrag groter dan 0 in"
+        else -> null
+    }
+    val isCustomDiscountValid = customDiscountError == null
+
+    val selectedFixedDiscountAmount = when (fixedDiscountOption) {
+        "10" -> 10f
+        "5" -> 5f
+        "custom" -> if (isCustomDiscountValid) parsedCustomDiscount!! else 0f
+        else -> 0f
+    }
+    val finalCheckoutAmount = (checkoutBaseAmount - selectedFixedDiscountAmount).coerceAtLeast(0f)
 
     Modal {
         open = true
         onClose = { _, _ -> props.onClose() }
         Box {
-            sx = js("{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 'min(720px, 92vw)', background: 'white', borderRadius: '12px', boxShadow: '0 8px 32px rgba(0,0,0,0.18)', padding: '24px', outline: 'none', display: 'flex', flexDirection: 'column', gap: '16px' }")
+            sx = js("{ position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)', width: 'min(640px, 90vw)', background: 'white', borderRadius: '12px', boxShadow: '0 8px 32px rgba(0,0,0,0.18)', padding: '20px', outline: 'none', display: 'flex', flexDirection: 'column', gap: '14px' }")
             Typography {
                 variant = mui.material.styles.TypographyVariant.h6
-                +"Openstaande rekeningen van ${summary.clientName}"
+                +"Afrekenen voor ${summary.clientName}"
             }
             Typography {
                 sx = js("{ color: '#666', fontSize: '0.92rem' }")
-                +"Afgeleverde bestellingen worden afgerekend. Andere openstaande bestellingen blijven zichtbaar in een lichtere stijl."
+                +"Afgeleverde bestellingen worden afgerekend. Andere openstaande bestellingen blijven zichtbaar."
             }
             Box {
                 sx = if (shouldScrollOrders) {
-                    js("{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '340px', overflowY: 'auto', background: '#f7f9fc', borderRadius: '8px', padding: '12px' }")
+                    js("{ display: 'flex', flexDirection: 'column', gap: '8px', maxHeight: '280px', overflowY: 'auto', background: '#f7f9fc', borderRadius: '8px', padding: '12px' }")
                 } else {
                     js("{ display: 'flex', flexDirection: 'column', gap: '8px', background: '#f7f9fc', borderRadius: '8px', padding: '12px' }")
                 }
@@ -51,16 +88,7 @@ val BulkCheckoutModal = FC<BulkCheckoutModalProps> { props ->
                         val isCheckoutable = order.canCheckout
                         val bgColor = if (isCheckoutable) "#e8f5e9" else "#f3f4f6"
                         val textColor = if (isCheckoutable) "#1b5e20" else "#6b7280"
-                        val formattedDate = order.createdAt?.let {
-                            try {
-                                val parts = it.split("T", limit = 2)
-                                if (parts.size == 2) {
-                                    val date = parts[0].split("-")
-                                    val time = parts[1].substring(0, 5)
-                                    if (date.size == 3) "$time ${date[2]}-${date[1]}-${date[0]}" else it
-                                } else it
-                            } catch (_: Exception) { it }
-                        } ?: "-"
+                        val formattedDate = formatUtcTimestampForDisplay(order.createdAt)
                         val rowSx = js("({})")
                         rowSx.display = "flex"
                         rowSx.justifyContent = "space-between"
@@ -75,7 +103,7 @@ val BulkCheckoutModal = FC<BulkCheckoutModalProps> { props ->
                                 sx = js("{ display: 'flex', flexDirection: 'column', gap: '2px' }")
                                 Typography { +"#${order.id} · Tafel ${order.tableNumber}" }
                                 Typography { sx = js("{ fontSize: '0.88rem' }"); +formattedDate }
-                                Typography { sx = js("{ fontSize: '0.88rem', fontWeight: 600 }"); +order.status }
+                                Typography { sx = js("{ fontSize: '0.88rem', fontWeight: 600 }"); +(if (order.canCheckout) "Betalen" else order.status) }
                             }
                             // Price column
                             val orderDiscount = order.discountPercentage
@@ -106,43 +134,81 @@ val BulkCheckoutModal = FC<BulkCheckoutModalProps> { props ->
             // Totals section
             Box {
                 sx = js("{ display: 'flex', flexDirection: 'column', gap: '6px', borderTop: '2px solid #1976d2', paddingTop: '12px' }")
+                Typography {
+                    sx = js("{ fontWeight: 700, color: '#1976d2' }")
+                    +"Totaal bedrag: € ${checkoutBaseAmount.fmt()}"
+                }
+
                 if (hasDiscount) {
-                    val totalAfterDiscount = summary.totalOpenAmountAfterDiscount ?: summary.totalOpenAmount
                     val checkoutAfterDiscount = summary.totalCheckoutableAmountAfterDiscount ?: summary.totalCheckoutableAmount
-                    val totalSaving = summary.totalOpenAmount - totalAfterDiscount
                     val checkoutSaving = summary.totalCheckoutableAmount - checkoutAfterDiscount
 
-                    // Community korting badge just above the breakdown
-                    Typography {
-                        sx = js("{ color: '#e65100', fontWeight: 500, fontSize: '0.88rem', background: '#fff3e0', borderRadius: '6px', padding: '4px 8px', alignSelf: 'flex-start' }")
-                        +"Community korting: ${summary.discountPercentage!!.toInt()}%"
-                    }
-
-                    // Afrekenbaar breakdown
-                    Typography {
-                        sx = js("{ fontSize: '0.95rem', color: '#444', marginTop: '4px' }")
-                        +"Nu afrekenbaar: € ${summary.totalCheckoutableAmount.fmt()}"
-                    }
-                    if (checkoutSaving > 0f) {
+                    Box {
+                        sx = js("{ display: 'flex', justifyContent: 'flex-end', marginTop: '4px' }")
                         Typography {
-                            sx = js("{ fontSize: '0.95rem', color: '#e65100' }")
-                            +"Korting (${summary.discountPercentage!!.toInt()}%): - € ${checkoutSaving.fmt()}"
+                            sx = js("{ color: '#e65100', fontWeight: 500, fontSize: '0.88rem', background: '#fff3e0', borderRadius: '6px', padding: '4px 8px' }")
+                            +"Groep korting: ${summary.discountPercentage!!.toInt()}%"
                         }
                     }
-                    Box { sx = js("{ borderTop: '1px solid #bdbdbd', marginTop: '2px', marginBottom: '2px' }") }
                     Typography {
-                        sx = js("{ fontWeight: 700, color: '#2e7d32', fontSize: '1rem' }")
-                        +"Resterend te betalen: € ${checkoutAfterDiscount.fmt()}"
+                        sx = js("{ fontSize: '0.95rem', color: '#e65100' }")
+                        +"Groep korting: - € ${checkoutSaving.fmt()}"
                     }
-                } else {
+                }
+
+                Box {
+                    sx = js("{ display: 'flex', gap: '12px', alignItems: 'flex-end', flexWrap: 'wrap', marginTop: '10px' }")
+                    FormControl {
+                        sx = js("{ minWidth: '220px' }")
+                        size = mui.material.Size.small
+                        InputLabel { +"Vaste korting" }
+                        Select {
+                            value = fixedDiscountOption
+                            label = react.ReactNode("Vaste korting")
+                            onChange = { event, _ ->
+                                setFixedDiscountOption(event.target.value)
+                                if (event.target.value != "custom") {
+                                    setCustomDiscountInput("")
+                                }
+                            }
+                            MenuItem { value = "none"; +"Geen korting" }
+                            MenuItem { value = "10"; +"10 euro" }
+                            MenuItem { value = "5"; +"5 euro" }
+                            MenuItem { value = "custom"; +"Zelf invullen" }
+                        }
+                    }
+                    if (fixedDiscountOption == "custom") {
+                        Box {
+                            sx = js("{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }")
+                            TextField {
+                                label = react.ReactNode("Bedrag")
+                                value = customDiscountInput
+                                error = customDiscountError != null
+                                asDynamic().type = "number"
+                                asDynamic().inputProps = js("{ min: '0.01', step: '0.01', inputMode: 'decimal' }")
+                                asDynamic().onChange = { event: dynamic -> setCustomDiscountInput(event.target.value as String) }
+                                size = mui.material.Size.small
+                                sx = js("{ width: '140px' }")
+                            }
+                            if (customDiscountError != null) {
+                                Typography {
+                                    sx = js("{ color: '#d32f2f', fontSize: '0.85rem', maxWidth: '220px' }")
+                                    +customDiscountError
+                                }
+                            }
+                        }
+                    }
+                }
+
+                if (selectedFixedDiscountAmount > 0f) {
                     Typography {
-                        sx = js("{ fontWeight: 700, color: '#1976d2' }")
-                        +"Totaal openstaand: € ${summary.totalOpenAmount.fmt()}"
+                        sx = js("{ fontSize: '0.95rem', color: '#e65100' }")
+                        +"Vaste korting: - € ${selectedFixedDiscountAmount.fmt()}"
                     }
-                    Typography {
-                        sx = js("{ fontWeight: 600, color: '#2e7d32', fontSize: '0.95rem' }")
-                        +"Nu afrekenbaar: € ${summary.totalCheckoutableAmount.fmt()}"
-                    }
+                }
+                Typography {
+                    sx = js("{ fontWeight: 700, color: '#1565c0', fontSize: '1rem' }")
+                    +"Te betalen: € ${finalCheckoutAmount.fmt()}"
                 }
             }
             if (props.error != null) {
@@ -161,9 +227,9 @@ val BulkCheckoutModal = FC<BulkCheckoutModalProps> { props ->
                 Button {
                     variant = mui.material.ButtonVariant.contained
                     color = mui.material.ButtonColor.primary
-                    disabled = props.loading || summary.orders.none { it.canCheckout }
-                    onClick = { props.onConfirm() }
-                    +"Alles afrekenen"
+                    disabled = props.loading || summary.orders.none { it.canCheckout } || !isCustomDiscountValid
+                    onClick = { props.onConfirm(if (selectedFixedDiscountAmount > 0f) selectedFixedDiscountAmount else null) }
+                    +"Afrekenen"
                 }
             }
         }

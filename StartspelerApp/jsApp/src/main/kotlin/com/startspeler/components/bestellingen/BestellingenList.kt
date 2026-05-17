@@ -13,7 +13,7 @@ external interface BestellingenListProps : Props {
     var error: String?
     var filter: String
     var selectedStatuses: List<String>
-    var onCheckout: (Int) -> Unit
+    var onCheckout: (String) -> Unit
     var onDelete: (Int) -> Unit
     var canDeleteOrders: Boolean
     var onMoveToNextStatus: (Int) -> Unit
@@ -52,7 +52,7 @@ val BestellingenList = FC<BestellingenListProps> { props ->
                 OrderOverzichtItem {
                     this.order = order
                     this.isOpen = false
-                    this.onCheckout = { props.onCheckout(order.id) }
+                    this.onCheckout = { props.onCheckout(order.clientName) }
                     this.onDelete = { props.onDelete(order.id) }
                     this.canDelete = props.canDeleteOrders
                     this.onMoveToNextStatus = { props.onMoveToNextStatus(order.id) }

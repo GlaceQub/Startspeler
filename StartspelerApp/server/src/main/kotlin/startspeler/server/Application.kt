@@ -86,7 +86,7 @@ fun main() {
 
     /** Allow public key retrieval for local dev when using caching_sha2_password auth plugin.
         NOTE: allowPublicKeyRetrieval=true is fine for local development but not recommended for production without TLS. */
-    val url = "jdbc:mysql://$mysqlHost:$mysqlPort/$mysqlDatabase?allowPublicKeyRetrieval=true&useSSL=false&serverTimezone=UTC"
+    val url = "jdbc:mysql://$mysqlHost:$mysqlPort/$mysqlDatabase?allowPublicKeyRetrieval=true&useSSL=false&connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true"
 
     val ds = DatabaseFactory.createDataSource(url, dbUser, dbPass)
     DatabaseFactory.connect(ds)
