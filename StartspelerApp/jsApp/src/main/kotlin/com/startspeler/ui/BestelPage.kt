@@ -28,10 +28,15 @@ external interface BestelPageProps : react.Props {
     var onAddKlant: () -> Unit
     var onOrderSubmit: ((List<CartItem>, String, String) -> Unit)?
     var submitLabel: String?
+    var isSubmitting: Boolean?
+    var conflictingProductNames: List<String>?
 }
 
 val BestelPage = FC<BestelPageProps> { pageProps ->
     console.log("[BestelPage] props:", pageProps)
+    val isSubmitting = pageProps.isSubmitting ?: false
+    val conflictingProductNames = pageProps.conflictingProductNames ?: emptyList()
+
     Box {
         sx = js("{ display: 'flex', flexDirection: 'row', width: '100%', minHeight: '80vh', boxSizing: 'border-box', overflowX: 'hidden' }")
         Box {
@@ -70,6 +75,8 @@ val BestelPage = FC<BestelPageProps> { pageProps ->
                 this.onKlantChange = pageProps.onKlantChange
                 this.onAddKlant = pageProps.onAddKlant
                 this.submitLabel = pageProps.submitLabel
+                this.isSubmitting = isSubmitting
+                this.conflictingProductNames = conflictingProductNames
             }
         }
     }

@@ -31,9 +31,18 @@ val BestellingActieModal = FC<BestellingActieModalProps> { props ->
                 variant = mui.material.styles.TypographyVariant.h6
                 +props.title
             }
-            Typography {
-                variant = mui.material.styles.TypographyVariant.body1
-                +props.description
+            Box {
+                sx = js("{ display: 'flex', flexDirection: 'column', gap: '2px' }")
+                props.description.split("\n").forEach { line ->
+                    if (line == "---") {
+                        Box { sx = js("{ borderTop: '1px solid #bdbdbd', marginTop: '4px', marginBottom: '4px' }") }
+                    } else {
+                        Typography {
+                            variant = mui.material.styles.TypographyVariant.body1
+                            +line
+                        }
+                    }
+                }
             }
             if (props.error != null) {
                 Typography {

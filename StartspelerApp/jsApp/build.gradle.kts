@@ -33,9 +33,7 @@ kotlin {
             binaries.executable()
         }
         compilations["main"].defaultSourceSet {
-            kotlin.srcDir("src/main/kotlin/com/startspeler/js")
-            kotlin.srcDir("src/main/kotlin/com/startspeler/ui")
-            kotlin.srcDir("src/main/kotlin/com/startspeler/components")
+            kotlin.srcDir("src/main/kotlin")
             resources.srcDir("src/main/resources")
         }
     }

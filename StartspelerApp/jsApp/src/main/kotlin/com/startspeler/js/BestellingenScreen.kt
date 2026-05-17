@@ -112,7 +112,8 @@ val BestellingenScreen = FC<Props> {
             val response = window.fetch(url.trimEnd('/') + "/klanten").await()
             if (response.ok) {
                 val text = response.text().await()
-                setClientOptions(json.decodeFromString<List<String>>(text))
+                val arr = JSON.parse<Array<dynamic>>(text)
+                setClientOptions(arr.map { it.name as String })
             }
         } catch (_: Throwable) {
         }
@@ -144,24 +145,9 @@ val BestellingenScreen = FC<Props> {
         }
     }
 
-    suspend fun checkoutOrder(orderId: Int) {
+    suspend fun openBulkCheckoutSummaryForClient(clientName: String) {
         val url = backendUrl ?: return
-        setError(null)
-        try {
-            val response = window.fetch(url.trimEnd('/') + "/order/$orderId/checkout", js("{ method: 'POST' }")).await()
-            if (response.ok) {
-                fetchOrders(dateFrom, dateTo)
-            } else {
-                setError("Afrekenen niet mogelijk voor deze bestelling")
-            }
-        } catch (e: Throwable) {
-            setError(e.message)
-        }
-    }
-
-    suspend fun openBulkCheckoutSummary() {
-        val url = backendUrl ?: return
-        val trimmedClient = selectedClient.trim()
+        val trimmedClient = clientName.trim()
         if (trimmedClient.isBlank()) {
             setClientInputError("Selecteer of typ een bestaande klant")
             return
@@ -170,6 +156,7 @@ val BestellingenScreen = FC<Props> {
             setClientInputError("Kies een bestaande klant uit de suggesties")
             return
         }
+        setSelectedClient(trimmedClient)
         setClientInputError(null)
         setBulkLoading(true)
         setBulkError(null)
@@ -189,19 +176,26 @@ val BestellingenScreen = FC<Props> {
         }
     }
 
-    suspend fun confirmBulkCheckout() {
+    suspend fun openBulkCheckoutSummary() {
+        openBulkCheckoutSummaryForClient(selectedClient)
+    }
+
+    suspend fun confirmBulkCheckout(fixedDiscountAmount: Float?) {
         val url = backendUrl ?: return
         if (selectedClient.isBlank()) return
         setBulkLoading(true)
         setBulkError(null)
         try {
+            val requestBody: dynamic = js("({})")
+            requestBody.clientName = selectedClient
+            requestBody.fixedDiscountAmount = fixedDiscountAmount
             val response = window.fetch(
                 url.trimEnd('/') + "/order/checkout-client",
                 js("""
                     ({
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ clientName: selectedClient })
+                        body: JSON.stringify(requestBody)
                     })
                 """)
             ).await()
@@ -220,6 +214,11 @@ val BestellingenScreen = FC<Props> {
         } finally {
             setBulkLoading(false)
         }
+    }
+
+    suspend fun checkoutOrder(clientName: String) {
+        setError(null)
+        openBulkCheckoutSummaryForClient(clientName)
     }
 
     suspend fun deleteOrder(orderId: Int) {
@@ -294,7 +293,7 @@ val BestellingenScreen = FC<Props> {
         this.selectedDate = selectedDate
         this.onSelectedDateChange = handleSelectedDateChange
         this.onApplyDateFilter = { MainScope().launch { fetchOrders(dateFrom, dateTo) } }
-        this.onCheckout = { orderId: Int -> MainScope().launch { checkoutOrder(orderId) } }
+        this.onCheckout = { clientName: String -> MainScope().launch { checkoutOrder(clientName) } }
         this.onDelete = { orderId: Int -> MainScope().launch { deleteOrder(orderId) } }
         this.canDeleteOrders = canDeleteOrders
         this.onMoveToNextStatus = { orderId: Int -> MainScope().launch { moveOrderStatus(orderId, "next") } }
@@ -313,7 +312,7 @@ val BestellingenScreen = FC<Props> {
             setBulkModalOpen(false)
             setBulkError(null)
         }
-        this.onConfirmBulkCheckout = { MainScope().launch { confirmBulkCheckout() } }
+        this.onConfirmBulkCheckout = { fixedDiscountAmount: Float? -> MainScope().launch { confirmBulkCheckout(fixedDiscountAmount) } }
         this.bulkLoading = bulkLoading
         this.bulkError = bulkError
     }

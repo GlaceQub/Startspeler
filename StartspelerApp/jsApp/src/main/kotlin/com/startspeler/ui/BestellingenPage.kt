@@ -21,7 +21,7 @@ external interface BestellingenPageProps : Props {
     var selectedDate: String
     var onSelectedDateChange: (String) -> Unit
     var onApplyDateFilter: () -> Unit
-    var onCheckout: (Int) -> Unit
+    var onCheckout: (String) -> Unit
     var onDelete: (Int) -> Unit
     var canDeleteOrders: Boolean
     var onMoveToNextStatus: (Int) -> Unit
@@ -34,7 +34,7 @@ external interface BestellingenPageProps : Props {
     var bulkSummary: ClientOpenOrdersSummary?
     var bulkModalOpen: Boolean
     var onBulkModalClose: () -> Unit
-    var onConfirmBulkCheckout: () -> Unit
+    var onConfirmBulkCheckout: (Float?) -> Unit
     var bulkLoading: Boolean
     var bulkError: String?
 }
@@ -65,7 +65,7 @@ val BestellingenPage = FC<BestellingenPageProps> { props ->
             error = props.error
             filter = props.filter
             selectedStatuses = props.selectedStatuses
-            onCheckout = props.onCheckout
+            asDynamic().onCheckout = props.onCheckout
             onDelete = props.onDelete
             canDeleteOrders = props.canDeleteOrders
             onMoveToNextStatus = props.onMoveToNextStatus
@@ -78,7 +78,7 @@ val BestellingenPage = FC<BestellingenPageProps> { props ->
             loading = props.bulkLoading
             error = props.bulkError
             onClose = props.onBulkModalClose
-            onConfirm = props.onConfirmBulkCheckout
+            asDynamic().onConfirm = props.onConfirmBulkCheckout
         }
     }
 }

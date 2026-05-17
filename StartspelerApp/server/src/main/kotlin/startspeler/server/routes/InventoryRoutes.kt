@@ -8,6 +8,7 @@ import io.ktor.server.request.*
 import io.ktor.server.response.*
 import io.ktor.server.routing.*
 import startspeler.server.repository.InventoryRepository
+import utils.toUtcIsoInstantString
 
 fun Routing.inventoryRoutes() {
     route("/inventory") {
@@ -18,7 +19,7 @@ fun Routing.inventoryRoutes() {
                     productId = inv.productId,
                     quantity = inv.quantity,
                     minimumQuantity = inv.minimumQuantity,
-                    lastUpdated = inv.lastUpdated?.toString()
+                    lastUpdated = inv.lastUpdated?.toUtcIsoInstantString()
                 )
             }
             call.respond(items)
@@ -36,7 +37,7 @@ fun Routing.inventoryRoutes() {
                 productId = item.productId,
                 quantity = item.quantity,
                 minimumQuantity = item.minimumQuantity,
-                lastUpdated = item.lastUpdated?.toString()
+                lastUpdated = item.lastUpdated?.toUtcIsoInstantString()
             ))
         }
 
@@ -56,7 +57,7 @@ fun Routing.inventoryRoutes() {
                 productId = updated.productId,
                 quantity = updated.quantity,
                 minimumQuantity = updated.minimumQuantity,
-                lastUpdated = updated.lastUpdated?.toString()
+                lastUpdated = updated.lastUpdated?.toUtcIsoInstantString()
             ))
         }
 

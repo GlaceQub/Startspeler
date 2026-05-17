@@ -49,7 +49,7 @@ val Navbar = FC<NavBarProps> { props ->
                     val cls = if (current == "login") "nav-button active" else "nav-button"
                     asDynamic().className = cls
                     if (current == "login") asDynamic()["aria-current"] = "page"
-                    +(if (isLoggedIn) "account" else "Login")
+                    +(if (isLoggedIn) "Profiel" else "Login")
                 }
 
                 // BESTEL knop
@@ -59,19 +59,21 @@ val Navbar = FC<NavBarProps> { props ->
                     disableElevation = true
                     val cls = if (current == "bestel") "nav-button active" else "nav-button"
                     asDynamic().className = cls
-                    if (current == "bestel") asDynamic()["aria-current"] = "page" // Use correct ARIA attribute
+                    if (current == "bestel") asDynamic()["aria-current"] = "page"
                     +"Bestel"
                 }
 
-                // KLANTEN knop
-                Button {
-                    onClick = { _ -> window.location.hash = "#/klanten" }
-                    variant = ButtonVariant.contained
-                    disableElevation = true
-                    val cls = if (current == "klanten") "nav-button active" else "nav-button"
-                    asDynamic().className = cls
-                    if (current == "klanten") asDynamic()["aria-current"] = "page"
-                    +"Klanten"
+                // KLANTEN knop (optioneel, alleen zichtbaar voor ingelogde gebruikers)
+                if (isLoggedIn) {
+                    Button {
+                        onClick = { _ -> window.location.hash = "#/klanten" }
+                        variant = ButtonVariant.contained
+                        disableElevation = true
+                        val cls = if (current == "klanten") "nav-button active" else "nav-button"
+                        asDynamic().className = cls
+                        if (current == "klanten") asDynamic()["aria-current"] = "page"
+                        +"Klanten"
+                    }
                 }
 
                 // Inventory knop (optioneel, alleen zichtbaar voor ingelogde gebruikers)
@@ -120,7 +122,7 @@ val Navbar = FC<NavBarProps> { props ->
                         val cls = if (current == "tables") "nav-button active" else "nav-button"
                         asDynamic().className = cls
                         if (current == "tables") asDynamic()["aria-current"] = "page"
-                        +"Tables"
+                        +"Tafels"
                     }
                 }
             }

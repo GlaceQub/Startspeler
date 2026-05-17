@@ -131,10 +131,10 @@
 }
 
 
-/* Zorg dat de Paper binnenin mooi “in” de box ligt */
-.inventoryRightBox .inventoryDetailsCard {
-    background-color: rgba(255, 255, 255, 0.9) !important;
-    box-shadow: none !important; /* optioneel: rustiger op de blauwe achtergrond */
+/* Zorg dat de detailkaart binnen de echte rechterkolom-selector extra styling krijgt */
+.inventoryRight .inventoryDetailsCard {
+    background-color: var(--startspeler-secondary) !important;
+    box-shadow: 0 2px 8px var(--inventory-shadow) !important;
 }
 
 /* Maak productnamen in de lijst wit */

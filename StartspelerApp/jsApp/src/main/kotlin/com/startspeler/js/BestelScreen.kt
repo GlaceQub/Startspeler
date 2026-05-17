@@ -2,6 +2,7 @@ package com.startspeler.js
 
 import com.startspeler.components.account.AddKlantModal
 import com.startspeler.dto.CartItem
+import com.startspeler.dto.InventoryDto
 import com.startspeler.ui.BestelPage
 import react.FC
 import react.Props
@@ -9,21 +10,49 @@ import com.startspeler.dto.ProductItem
 import com.startspeler.models.Category
 import kotlinx.browser.window
 import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.await
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
 import react.useEffect
 import react.useEffectOnce
 import react.useState
+import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import mui.material.Snackbar
 import mui.material.Alert
-import com.startspeler.dto.klantToevoegen
+import mui.material.Button
+import mui.material.Dialog
+import mui.material.DialogActions
+import mui.material.DialogContent
+import mui.material.DialogTitle
+import mui.material.Typography
+
+@Serializable
+private data class InsufficientStockResponse(
+    val error: String? = null,
+    val products: List<String> = emptyList()
+)
+
+private fun mergeProductsWithCartStock(loadedProducts: List<ProductItem>, cartSnapshot: List<CartItem>): List<ProductItem> =
+    loadedProducts.map { p ->
+        val cartQty = cartSnapshot.find { it.product.id == p.id }?.quantity ?: 0
+        val isBlockedByCartQuantity = p.stockQuantity > 0 && cartQty >= p.stockQuantity
+        p.copy(outOfStock = p.outOfStock || isBlockedByCartQuantity)
+    }
+
+private data class CartReconcileResult(
+    val adjustedCart: List<CartItem>,
+    val changedProductNames: List<String>
+)
 
 external interface BestelScreenProps : Props {
     var initialTafelId: Int?
 }
 
 val BestelScreen = FC<BestelScreenProps> { props ->
+    val json = Json { ignoreUnknownKeys = true }
     val (categories, setCategories) = useState<List<Category>>(emptyList())
     val (products, setProducts) = useState<List<ProductItem>>(emptyList())
     val (selectedCategory, setSelectedCategory) = useState<Category?>(null)
@@ -35,7 +64,9 @@ val BestelScreen = FC<BestelScreenProps> { props ->
     // Cart state
     val (cartItems, setCartItems) = useState<List<CartItem>>(emptyList())
     val (orderSnackbarOpen, setOrderSnackbarOpen) = useState(false)
-    val (stockErrorSnackbarOpen, setStockErrorSnackbarOpen) = useState(false)
+    val (placingOrder, setPlacingOrder) = useState(false)
+    val (stockConflictOpen, setStockConflictOpen) = useState(false)
+    val (stockConflictProducts, setStockConflictProducts) = useState<List<String>>(emptyList())
 
     // Tafel and Klant state and logic
     val (tafelOptions, setTafelOptions) = useState<List<String>>(emptyList())
@@ -58,7 +89,7 @@ val BestelScreen = FC<BestelScreenProps> { props ->
         val resp = window.fetch(url).await()
         val responseText = resp.text().await()
 
-        val klantenList = Json.decodeFromString<List<String>>(responseText)
+        val klantenList = json.decodeFromString<List<String>>(responseText)
         setKlanten(klantenList)
 
         when {
@@ -72,9 +103,11 @@ val BestelScreen = FC<BestelScreenProps> { props ->
         if (name.isNotBlank() && backendUrl != null) {
             MainScope().launch {
                 try {
-                    val url = backendUrl!!.trimEnd('/') + "/klant/add"
+                    val url = backendUrl.trimEnd('/') + "/klant/add"
 
-                    val bodyObj = js("{ name: name, email: email }")
+                    val bodyObj: dynamic = js("({})")
+                    bodyObj.name = name
+                    bodyObj.email = email
                     val requestInit = js("{ method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(bodyObj) }")
 
                     val response = window.fetch(url, requestInit).await()
@@ -113,7 +146,7 @@ val BestelScreen = FC<BestelScreenProps> { props ->
                 }
             }
             .catch { throwable ->
-                setError("Error loading config.json: ${'$'}throwable")
+                setError("Error loading config.json: $throwable")
             }
     }
 
@@ -127,10 +160,10 @@ val BestelScreen = FC<BestelScreenProps> { props ->
                         .await()
                         .text()
                         .await()
-                    val categories = Json.decodeFromString<List<Category>>(response)
+                    val categories = json.decodeFromString<List<Category>>(response)
                     setCategories(categories)
                 } catch (e: Throwable) {
-                    setError("Fout bij het ophalen van de categoriën: ${'$'}e")
+                    setError("Fout bij het ophalen van de categoriën: $e")
                 } finally {
                     setLoadingCategories(false)
                 }
@@ -139,6 +172,75 @@ val BestelScreen = FC<BestelScreenProps> { props ->
     }
 
     val initialTafelId = props.initialTafelId
+
+    suspend fun loadProductsForCategory(category: Category, cartSnapshot: List<CartItem> = cartItems) {
+        val base = backendUrl ?: return
+        setLoadingProducts(true)
+        try {
+            val response = window.fetch(base.trimEnd('/') + "/products/category/${category.id}/with-stock")
+                .await()
+                .text()
+                .await()
+            val loadedProducts = json.decodeFromString<List<ProductItem>>(response)
+            setProducts(mergeProductsWithCartStock(loadedProducts, cartSnapshot))
+        } catch (e: Throwable) {
+            setError("Fout bij het ophalen van de producten: $e")
+        } finally {
+            setLoadingProducts(false)
+        }
+    }
+
+    suspend fun refreshVisibleStock(cartSnapshot: List<CartItem> = cartItems) {
+        val category = selectedCategory ?: return
+        loadProductsForCategory(category, cartSnapshot)
+    }
+
+    fun refreshVisibleStockAsync(cartSnapshot: List<CartItem> = cartItems) {
+        MainScope().launch {
+            refreshVisibleStock(cartSnapshot)
+        }
+    }
+
+    suspend fun fetchInventoryByProductId(): Map<Int, InventoryDto> {
+        val base = backendUrl ?: return emptyMap()
+        val responseText = window.fetch(base.trimEnd('/') + "/inventory")
+            .await()
+            .text()
+            .await()
+        val inventoryItems = json.decodeFromString(ListSerializer(InventoryDto.serializer()), responseText)
+        return inventoryItems.associateBy { it.productId }
+    }
+
+    fun reconcileCart(cartSnapshot: List<CartItem>, inventoryByProductId: Map<Int, InventoryDto>): CartReconcileResult {
+        val changedNames = mutableListOf<String>()
+        val adjustedCart = cartSnapshot.mapNotNull { item ->
+            val latestQuantity = inventoryByProductId[item.product.id]?.quantity ?: 0
+            when {
+                latestQuantity <= 0 -> {
+                    changedNames += item.product.name
+                    null
+                }
+                item.quantity > latestQuantity -> {
+                    changedNames += item.product.name
+                    item.copy(
+                        product = item.product.copy(stockQuantity = latestQuantity, outOfStock = latestQuantity <= 0),
+                        quantity = latestQuantity
+                    )
+                }
+                else -> item.copy(
+                    product = item.product.copy(stockQuantity = latestQuantity, outOfStock = latestQuantity <= 0)
+                )
+            }
+        }
+        return CartReconcileResult(adjustedCart = adjustedCart, changedProductNames = changedNames.distinct())
+    }
+
+    fun applyCartReconcileResult(result: CartReconcileResult) {
+        setCartItems(result.adjustedCart)
+        setStockConflictProducts(result.changedProductNames)
+        setStockConflictOpen(result.changedProductNames.isNotEmpty())
+        refreshVisibleStockAsync(result.adjustedCart)
+    }
 
     // Fetch klanten and tafels from backend
     useEffect(dependencies = arrayOf(backendUrl)) {
@@ -156,13 +258,13 @@ val BestelScreen = FC<BestelScreenProps> { props ->
             MainScope().launch {
                 try {
                     val response = window.fetch(backendUrl.trimEnd('/') + "/tafels").await().text().await()
-                    val tafelList = Json.decodeFromString<List<String>>(response)
+                    val tafelList = json.decodeFromString<List<String>>(response)
                     setTafelOptions(tafelList)
                     // Auto-select from QR param if present, otherwise first
                     val matched = if (initialTafelId != null) tafelList.find { it.contains(initialTafelId.toString()) } else null
                     setSelectedTafel(matched ?: tafelList.firstOrNull() ?: "")
                 } catch (e: Throwable) {
-                    setError("Fout bij het ophalen van de tafels: ${'$'}e")
+                    setError("Fout bij het ophalen van de tafels: $e")
                 }
             }
         }
@@ -171,27 +273,8 @@ val BestelScreen = FC<BestelScreenProps> { props ->
     val handleCategoryClick: (Category) -> Unit = { category ->
         setSelectedCategory(category)
         if (backendUrl != null) {
-            setLoadingProducts(true)
             MainScope().launch {
-                try {
-                    val response = window.fetch(backendUrl.trimEnd('/') + "/products/category/${category.id}/with-stock")
-                        .await()
-                        .text()
-                        .await()
-                    val loadedProducts = Json.decodeFromString<List<ProductItem>>(response)
-                    // Pas outOfStock aan op basis van huidige cart
-                    val updatedProducts = loadedProducts.map { p ->
-                        val cartQty = cartItems.find { it.product.id == p.id }?.quantity ?: 0
-                        if (cartQty >= p.stockQuantity && p.stockQuantity > 0) {
-                            p.copy(outOfStock = true)
-                        } else p
-                    }
-                    setProducts(updatedProducts)
-                } catch (e: Throwable) {
-                    setError("Fout bij het ophalen van de producten: ${'$'}e")
-                } finally {
-                    setLoadingProducts(false)
-                }
+                loadProductsForCategory(category, cartItems)
             }
         }
     }
@@ -207,6 +290,7 @@ val BestelScreen = FC<BestelScreenProps> { props ->
                 cartItems + CartItem(product, 1)
             }
             setCartItems(newCart)
+            setStockConflictProducts(stockConflictProducts.filter { conflictName -> newCart.any { it.product.name == conflictName } })
 
             // Zet outOfStock lokaal op true als cart quantity de beschikbare stock bereikt
             setProducts(products.map { p ->
@@ -219,10 +303,22 @@ val BestelScreen = FC<BestelScreenProps> { props ->
     val handleRemoveFromCart: (CartItem) -> Unit = { item ->
         val existing = cartItems.find { it.product.id == item.product.id }
         val newQuantity = if (existing != null && existing.quantity > 1) existing.quantity - 1 else 0
-        if (newQuantity > 0) {
-            setCartItems(cartItems.map { if (it.product.id == item.product.id) it.copy(quantity = newQuantity) else it })
+        val updatedCart = if (newQuantity > 0) {
+            cartItems.map { if (it.product.id == item.product.id) it.copy(quantity = newQuantity) else it }
         } else {
-            setCartItems(cartItems.filterNot { it.product.id == item.product.id })
+            cartItems.filterNot { it.product.id == item.product.id }
+        }
+        if (newQuantity > 0) {
+            setCartItems(updatedCart)
+        } else {
+            setCartItems(updatedCart)
+        }
+        val remainingConflictProducts = stockConflictProducts.filter { conflictName ->
+            updatedCart.any { it.product.name == conflictName }
+        }
+        setStockConflictProducts(remainingConflictProducts)
+        if (remainingConflictProducts.isEmpty()) {
+            setStockConflictOpen(false)
         }
         // Zet outOfStock terug op false als er minder in de cart zit dan de stock
         setProducts(products.map { p ->
@@ -240,24 +336,62 @@ val BestelScreen = FC<BestelScreenProps> { props ->
             val orderData = js("{}")
             orderData.klant = selectedKlant
             orderData.tafel = selectedTafel
-            orderData.items = cartItems.map { item ->
-                js("{ productId: item.product_1.id_1, quantity: item.quantity_1, price: item.product_1.price_1 }")
+            orderData.items = cartItems.map { cartItem ->
+                val obj: dynamic = js("({})")
+                obj.productId = cartItem.product.id
+                obj.quantity = cartItem.quantity
+                obj.price = cartItem.product.price
+                obj
             }.toTypedArray()
             MainScope().launch {
+                setPlacingOrder(true)
                 try {
+                    val inventoryByProductId = fetchInventoryByProductId()
+                    val preflightResult = reconcileCart(cartItems, inventoryByProductId)
+                    if (preflightResult.changedProductNames.isNotEmpty()) {
+                        setPlacingOrder(false)
+                        applyCartReconcileResult(preflightResult)
+                        return@launch
+                    }
+
                     val requestInit = js("{ method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(orderData) }")
-                    val response = window.fetch(backendUrl.trimEnd('/') + "/order/add", requestInit).await()
+                    val response = withTimeout(15000) {
+                        window.fetch(backendUrl.trimEnd('/') + "/order/add", requestInit).await()
+                    }
+                    val responseText = withTimeout(5000) {
+                        response.text().await()
+                    }
+                    setPlacingOrder(false)
                     if (response.ok) {
                         setCartItems(emptyList())
+                        setStockConflictProducts(emptyList())
+                        setStockConflictOpen(false)
                         setOrderSnackbarOpen(true)
+                        refreshVisibleStockAsync(emptyList())
                     } else if (response.asDynamic().status == 409) {
-                        setStockErrorSnackbarOpen(true)
-                        js("setTimeout(function() { window.location.reload(); }, 5000)")
+                        val conflict = try {
+                            json.decodeFromString<InsufficientStockResponse>(responseText)
+                        } catch (_: Throwable) {
+                            InsufficientStockResponse(products = emptyList())
+                        }
+                        val latestInventory = fetchInventoryByProductId()
+                        val reconciled = reconcileCart(cartItems, latestInventory)
+                        if (reconciled.changedProductNames.isNotEmpty()) {
+                            applyCartReconcileResult(reconciled)
+                        } else {
+                            setStockConflictProducts(conflict.products)
+                            setStockConflictOpen(true)
+                            refreshVisibleStockAsync(cartItems)
+                        }
                     } else {
-                        setError("Bestelling plaatsen mislukt: "+response.status+" "+response.statusText)
+                        setError("Bestelling plaatsen mislukt: " + response.status + " " + response.statusText + if (responseText.isNotBlank()) " $responseText" else "")
                     }
+                } catch (_: TimeoutCancellationException) {
+                    setError("De server reageert niet op tijd bij het plaatsen van de bestelling. Probeer opnieuw.")
                 } catch (e: Throwable) {
-                    setError("Bestelling plaatsen mislukt: ${'$'}e")
+                    setError("Bestelling plaatsen mislukt: $e")
+                } finally {
+                    setPlacingOrder(false)
                 }
             }
         }
@@ -286,6 +420,9 @@ val BestelScreen = FC<BestelScreenProps> { props ->
         this.selectedKlant = selectedKlant
         this.onKlantChange = handleKlantChange
         this.onAddKlant = handleAddKlant
+        this.submitLabel = if (placingOrder) "Bestelling controleren..." else "Bestellen"
+        this.isSubmitting = placingOrder
+        this.conflictingProductNames = stockConflictProducts
     }
 
     AddKlantModal {
@@ -294,6 +431,38 @@ val BestelScreen = FC<BestelScreenProps> { props ->
         onAdd = handleKlantModalAdd
         existingNames = klanten
         existingEmails = emptyList()
+    }
+
+    Dialog {
+        open = stockConflictOpen
+        onClose = { _, _ -> setStockConflictOpen(false) }
+
+        DialogTitle {
+            +"Niet alles is nog in voorraad"
+        }
+        DialogContent {
+            Typography {
+                +"Je winkelwagen is aangepast aan de actuele voorraad." 
+            }
+            if (stockConflictProducts.isNotEmpty()) {
+                Typography {
+                    sx = js("{ marginTop: '16px', fontWeight: 700 }")
+                    +"Aangepast:"
+                }
+                stockConflictProducts.forEach { productName ->
+                    Typography {
+                        sx = js("{ marginTop: '8px' }")
+                        +"• $productName"
+                    }
+                }
+            }
+        }
+        DialogActions {
+            Button {
+                onClick = { setStockConflictOpen(false) }
+                +"Bestelling aanpassen"
+            }
+        }
     }
 
     // Snackbar for order placed
@@ -305,18 +474,6 @@ val BestelScreen = FC<BestelScreenProps> { props ->
             severity = "success"
             sx = js("{ width: '100%' }")
             +"Bestelling geplaatst!"
-        }
-    }
-
-    // Snackbar for insufficient stock
-    Snackbar {
-        open = stockErrorSnackbarOpen
-        autoHideDuration = 5000
-        onClose = { _, _ -> setStockErrorSnackbarOpen(false) }
-        Alert {
-            severity = "error"
-            sx = js("{ width: '100%' }")
-            +"Sorry, kon niet elk product toevoegen omdat het niet meer in voorraad is."
         }
     }
 }

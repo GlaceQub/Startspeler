@@ -16,6 +16,8 @@ data class OrderOverzichtItem(
     val canDelete: Boolean = true,
     val canCheckout: Boolean = false,
     val totalPrice: Float,
+    val priceAfterDiscount: Float? = null,
+    val discountPercentage: Float? = null,
     val clientName: String,
     val placedByStaff: Boolean,
     val orderitems: List<OverzichtOrderitem>,
@@ -27,7 +29,10 @@ data class ClientOpenOrdersSummary(
     val clientName: String,
     val orders: List<OrderOverzichtItem>,
     val totalOpenAmount: Float,
-    val totalCheckoutableAmount: Float
+    val totalCheckoutableAmount: Float,
+    val totalOpenAmountAfterDiscount: Float? = null,
+    val totalCheckoutableAmountAfterDiscount: Float? = null,
+    val discountPercentage: Float? = null
 )
 
 @Serializable
@@ -42,7 +47,9 @@ data class BulkCheckoutResponse(
     val success: Boolean,
     val summary: ClientOpenOrdersSummary? = null,
     val updatedOrderIds: List<Int> = emptyList(),
-    val error: String? = null
+    val error: String? = null,
+    val appliedFixedDiscountAmount: Float? = null,
+    val finalCheckoutAmount: Float? = null
 )
 
 @Serializable
@@ -61,7 +68,8 @@ data class UpdateOrderRequest(
 
 @Serializable
 data class BulkCheckoutRequest(
-    val clientName: String
+    val clientName: String,
+    val fixedDiscountAmount: Float? = null
 )
 
 @Serializable

@@ -145,7 +145,7 @@ val BestellingenFilterBar = FC<BestellingenFilterBarProps> { props ->
                     color = mui.material.ButtonColor.primary
                     size = mui.material.Size.small
                     onClick = { props.onOpenBulkCheckout() }
-                    +"Openstaande rekeningen"
+                    +"Afrekenen klant"
                 }
             }
         }

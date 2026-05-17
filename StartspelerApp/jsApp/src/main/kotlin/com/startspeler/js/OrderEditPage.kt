@@ -310,6 +310,8 @@ val OrderEditPage = FC<OrderEditPageProps> { props ->
             this.onAddKlant = { window.location.hash = "#/usercreate" }
             this.onOrderSubmit = onOrderSubmit
             this.submitLabel = "Opslaan"
+            this.isSubmitting = saving
+            this.conflictingProductNames = emptyList()
         }
     }
 }
