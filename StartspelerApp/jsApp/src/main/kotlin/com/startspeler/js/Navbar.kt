@@ -85,7 +85,7 @@ val Navbar = FC<NavBarProps> { props ->
                         val cls = if (current == "inventory") "nav-button active" else "nav-button"
                         asDynamic().className = cls
                         if (current == "inventory") asDynamic()["aria-current"] = "page"
-                        +"Stock"
+                        +"Voorraad"
                     }
                 }
 

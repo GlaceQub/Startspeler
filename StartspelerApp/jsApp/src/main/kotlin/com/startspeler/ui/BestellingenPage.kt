@@ -43,6 +43,11 @@ val BestellingenPage = FC<BestellingenPageProps> { props ->
     Box {
         sx = js("{ display: 'flex', flexDirection: 'column', gap: '8px', padding: '16px', width: '100%', boxSizing: 'border-box' }")
 
+        PageTitleBar {
+            title = "Bestellingen"
+            rightContent = null
+        }
+
         BestellingenFilterBar {
             filter = props.filter
             onFilterChange = props.onFilterChange

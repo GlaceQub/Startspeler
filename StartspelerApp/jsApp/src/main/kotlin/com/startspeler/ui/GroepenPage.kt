@@ -76,6 +76,7 @@ val GroepenPage = FC<GroepenPageProps> { props ->
                 variant = ButtonVariant.contained
                 color = ButtonColor.primary
                 size = Size.small
+                asDynamic().className = "btnPrimary"
                 onClick = { openAdd() }
                 +"Toevoegen"
             }

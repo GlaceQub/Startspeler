@@ -65,6 +65,7 @@ val BestellingenFilterBar = FC<BestellingenFilterBarProps> { props ->
                 props.statusOptions.forEach { status ->
                     val selected = props.selectedStatuses.contains(status)
                     Button {
+                        asDynamic().className = "btnPrimary"
                         variant = if (selected) mui.material.ButtonVariant.contained else mui.material.ButtonVariant.outlined
                         asDynamic().color = if (selected) "primary" else "inherit"
                         onClick = {
@@ -97,6 +98,7 @@ val BestellingenFilterBar = FC<BestellingenFilterBarProps> { props ->
                 Button {
                     variant = mui.material.ButtonVariant.contained
                     color = mui.material.ButtonColor.primary
+                    asDynamic().className = "btnPrimary"
                     size = mui.material.Size.small
                     onClick = { props.onApplyDateFilter() }
                     +"Toepassen"
@@ -141,6 +143,7 @@ val BestellingenFilterBar = FC<BestellingenFilterBarProps> { props ->
                     }
                 }
                 Button {
+                    asDynamic().className = "btnPrimary"
                     variant = mui.material.ButtonVariant.outlined
                     color = mui.material.ButtonColor.primary
                     size = mui.material.Size.small
