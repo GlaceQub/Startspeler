@@ -116,6 +116,7 @@ val Cart = FC<CartProps> { props ->
         }
 
         Button {
+            variant = mui.material.ButtonVariant.contained
             sx =
                 js("{ marginTop: 'auto', marginTop: '16px', backgroundColor: 'var(--startspeler-primary)', color: 'white', fontWeight: 700, borderRadius: '20px' }")
             fullWidth = true

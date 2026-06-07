@@ -4,6 +4,7 @@ import com.startspeler.klanten.dto.KlantAddRequestDto
 import com.startspeler.klanten.dto.KlantUpdateRequestDto
 import com.startspeler.klanten.dto.KlantenDto
 import db.tables.Role
+import db.tables.Status
 import db.tables.User
 import io.ktor.http.HttpStatusCode
 import io.ktor.server.application.call
@@ -45,14 +46,28 @@ fun Routing.klantenRoutes() {
                 return@post
             }
 
+            // Look up the "klant" role ID dynamically so we don't depend on a hardcoded value
+            val klantRoleId = transaction {
+                Role.select { Role.name eq "klant" }.singleOrNull()?.get(Role.id)
+            } ?: run {
+                call.respond(HttpStatusCode.InternalServerError, "Rol 'klant' niet gevonden in de database")
+                return@post
+            }
+
+            // Look up the "actief" status ID dynamically (statusId = 1 by convention, but resolved safely)
+            val actiefStatusId = transaction {
+                Status.select { Status.name eq "actief" }.singleOrNull()
+                    ?.get(Status.id) ?: 1
+            }
+
             val id = UserRepository.createUser(
                 username = klant.name,
                 email = email,
                 passwordHash = null,
                 salt = null,
                 groupId = 1,
-                roleId = 3,
-                statusId = 1
+                roleId = klantRoleId,
+                statusId = actiefStatusId
             )
 
             call.respond(HttpStatusCode.Created, mapOf("message" to "Klant added", "id" to id, "klant" to klant))
@@ -131,8 +146,10 @@ fun Routing.klantenRoutes() {
 
         get("/names") {
             val klanten = transaction {
+                val actiefStatusId = Status.select { Status.name eq "actief" }
+                    .singleOrNull()?.get(Status.id) ?: 1
                 (User innerJoin Role)
-                    .select { (Role.name eq "klant") and (User.statusId eq 1) }
+                    .select { (Role.name eq "klant") and (User.statusId eq actiefStatusId) }
                     .map { it[User.name] }
             }
             call.respond(klanten)

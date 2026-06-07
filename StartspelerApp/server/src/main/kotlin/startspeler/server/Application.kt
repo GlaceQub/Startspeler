@@ -32,10 +32,21 @@ import io.ktor.http.HttpMethod
 
 fun main() {
     //region Database setup
-    /** Look specifically for the docker-compose .env at {repo_root}/Database/docker/.env, */
+    /**
+     * Searches for a .env file in the following locations (first match wins):
+     *  1. server/  directory  – convenient when running locally without Docker
+     *  2. {repo_root}/Database/docker/  – legacy Docker-compose location
+     *
+     * For a Combell-hosted DB, place your .env in either location and set
+     * MYSQL_HOST to the hostname provided by Combell.
+     */
     fun loadDotenvFromDockerPath(): Dotenv {
         val userDir = System.getProperty("user.dir") ?: "."
         val possibleDirs = listOf(
+            // server/ directory (run from StartspelerApp or server/)
+            File(userDir, "server"),
+            File(userDir),
+            // legacy Database/docker locations
             File(userDir, "../Database/docker"),
             File(userDir, "../../Database/docker"),
             File(userDir).parentFile?.resolve("Database/docker"),
@@ -53,7 +64,11 @@ fun main() {
                 }
             }
         }
-        error("ERROR: .env file not found in Database/docker. Please create and configure the .env file.")
+        error(
+            "ERROR: .env file not found. " +
+            "Create a .env file in the 'server/' directory (or Database/docker/) " +
+            "with MYSQL_HOST, MYSQL_PORT, MYSQL_DATABASE, MYSQL_USER and MYSQL_PASSWORD."
+        )
     }
 
     val dotenv = loadDotenvFromDockerPath()
@@ -84,9 +99,18 @@ fun main() {
         return
     }
 
-    /** Allow public key retrieval for local dev when using caching_sha2_password auth plugin.
-        NOTE: allowPublicKeyRetrieval=true is fine for local development but not recommended for production without TLS. */
-    val url = "jdbc:mysql://$mysqlHost:$mysqlPort/$mysqlDatabase?allowPublicKeyRetrieval=true&useSSL=false&connectionTimeZone=UTC&forceConnectionTimeZoneToSession=true"
+    /** Build the JDBC connection URL.
+     *  - For a Combell hosted DB, SSL is typically required; set useSSL=true and
+     *    allowPublicKeyRetrieval=true so the driver can retrieve the server's public key over SSL.
+     *  - If you are still running a local (non-Docker) MySQL without SSL, you can
+     *    set MYSQL_USE_SSL=false in your .env to override.
+     */
+    val useSSL = envFromDotenv("MYSQL_USE_SSL", "true")!!
+    val url = "jdbc:mysql://$mysqlHost:$mysqlPort/$mysqlDatabase" +
+        "?allowPublicKeyRetrieval=true" +
+        "&useSSL=$useSSL" +
+        "&connectionTimeZone=UTC" +
+        "&forceConnectionTimeZoneToSession=true"
 
     val ds = DatabaseFactory.createDataSource(url, dbUser, dbPass)
     DatabaseFactory.connect(ds)

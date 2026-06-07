@@ -75,6 +75,8 @@ val BestelScreen = FC<BestelScreenProps> { props ->
     val (klanten, setKlanten) = klantOptions
     val (selectedKlant, setSelectedKlant) = useState("")
     val (addKlantModalOpen, setAddKlantModalOpen) = useState(false)
+    // Incremented every time a klant is successfully added — triggers the useEffect below
+    val (klantRefreshTrigger, setKlantRefreshTrigger) = useState(0)
 
     val handleTafelChange: (String) -> Unit = { setSelectedTafel(it) }
     val handleKlantChange: (String) -> Unit = { setSelectedKlant(it) }
@@ -100,32 +102,28 @@ val BestelScreen = FC<BestelScreenProps> { props ->
     }
 
     val handleKlantModalAdd: (String, String?) -> Unit = { name, email ->
-        if (name.isNotBlank() && backendUrl != null) {
+        val capturedUrl = backendUrl
+        if (name.isNotBlank() && capturedUrl != null) {
             MainScope().launch {
                 try {
-                    val url = backendUrl.trimEnd('/') + "/klant/add"
-
+                    val url = capturedUrl.trimEnd('/') + "/klant/add"
                     val bodyObj: dynamic = js("({})")
                     bodyObj.name = name
                     bodyObj.email = email
                     val requestInit = js("{ method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(bodyObj) }")
-
                     val response = window.fetch(url, requestInit).await()
-                    val responseText = response.text().await()
-
                     if (response.ok) {
-                        refreshKlanten(selectName = name)
+                        // Signal the useEffect below to refetch the klanten list
+                        setKlantRefreshTrigger { it + 1 }
+                        setSelectedKlant(name)
                     } else {
+                        val responseText = response.text().await()
                         setError("Klant toevoegen mislukt: ${response.status} ${response.statusText} $responseText")
                     }
                 } catch (e: Throwable) {
                     setError("Klant toevoegen mislukt: $e")
-                } finally {
-                    setAddKlantModalOpen(false)
                 }
             }
-        } else {
-            setAddKlantModalOpen(false)
         }
     }
     val handleKlantModalClose: () -> Unit = {
@@ -265,6 +263,24 @@ val BestelScreen = FC<BestelScreenProps> { props ->
                     setSelectedTafel(matched ?: tafelList.firstOrNull() ?: "")
                 } catch (e: Throwable) {
                     setError("Fout bij het ophalen van de tafels: $e")
+                }
+            }
+        }
+    }
+
+    // Refetch klanten list whenever a new klant is successfully added
+    useEffect(dependencies = arrayOf(klantRefreshTrigger)) {
+        if (klantRefreshTrigger > 0 && backendUrl != null) {
+            MainScope().launch {
+                try {
+                    val resp = window.fetch(backendUrl.trimEnd('/') + "/klanten/names").await()
+                    if (resp.ok) {
+                        val text = resp.text().await()
+                        val klantenList = json.decodeFromString<List<String>>(text)
+                        setKlanten(klantenList)
+                    }
+                } catch (e: Throwable) {
+                    setError("Fout bij het verversen van klanten: $e")
                 }
             }
         }

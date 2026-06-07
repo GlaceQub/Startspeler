@@ -1,6 +1,7 @@
 package startspeler.server.repository
 
 import db.tables.Role
+import db.tables.Status
 import db.tables.User
 import org.jetbrains.exposed.sql.ResultRow
 import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
@@ -28,7 +29,9 @@ data class KlantModel(
 object KlantenRepository {
 
     fun getAll(nameFilter: String? = null, emailFilter: String? = null): List<KlantModel> = transaction {
-        val base = (Role.name eq "klant") and (User.statusId eq 1)
+        val actiefStatusId = Status.select { Status.name eq "actief" }
+            .singleOrNull()?.get(Status.id) ?: 1
+        val base = (Role.name eq "klant") and (User.statusId eq actiefStatusId)
 
         val cond = when {
             !nameFilter.isNullOrBlank() && !emailFilter.isNullOrBlank() ->
