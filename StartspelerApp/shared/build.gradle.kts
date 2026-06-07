@@ -4,13 +4,11 @@ plugins {
 }
 
 kotlin {
+    jvm() // <-- Add JVM target for server compatibility
     js(IR) {
-        browser {
-            commonWebpackConfig { cssSupport.enabled = true }
-        }
+        browser()
         binaries.executable()
     }
-
     sourceSets {
         val commonMain by getting {
             dependencies {
@@ -19,11 +17,17 @@ kotlin {
                 implementation("io.ktor:ktor-serialization-kotlinx-json:${property("ktor.version")}")
                 implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:${property("kotlinx.serialization.version")}")
                 implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:${property("kotlinx.coroutines.version")}")
+                implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.4.0")
             }
         }
         val jsMain by getting {
             dependencies {
                 implementation("io.ktor:ktor-client-js:${property("ktor.version")}")
+            }
+        }
+        val jvmMain by getting {
+            dependencies {
+                // JVM-specific dependencies can be added here if needed
             }
         }
     }

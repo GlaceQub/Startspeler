@@ -1,0 +1,20 @@
+.btnPrimary {
+  background-color: #2B3078 !important;
+  color: #ffffff !important;
+  border-radius: 10px !important;
+  text-transform: none !important;
+  font-weight: 700 !important;
+  box-shadow: none !important;
+  padding: 6px 12px !important;
+  min-height: 36px !important;
+}
+
+.btnPrimary:hover {
+  background-color: #232966 !important;
+  box-shadow: none !important;
+}
+
+.btnPrimary:disabled {
+  opacity: 0.6 !important;
+  color: rgba(255,255,255,0.85) !important;
+}

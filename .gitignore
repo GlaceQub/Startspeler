@@ -1,0 +1,9 @@
+# Ignore Visual Studio Code settings folder
+.vscode/
+# Ignore the OwnNotes folder and everything inside it
+OwnNotes/
+# Ignore the SharedNotes folder and everything inside it
+SharedNotes/
+# Ignore database docker setup folder
+Database/docker/.env
+Meetings/SharedNotes/*

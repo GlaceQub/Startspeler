@@ -1,0 +1,87 @@
+.tafelRoot {
+  --tafel-primary: var(--startspeler-primary);
+  --tafel-primary-contrast: var(--startspeler-primary-contrast);
+  --tafel-secondary: var(--startspeler-secondary);
+  --tafel-shadow: var(--startspeler-shadow);
+  --tafel-text: var(--startspeler-text);
+}
+
+.tafelGrid {
+  display: grid !important;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)) !important;
+  gap: 16px !important;
+  margin-top: 16px !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.tafelCard {
+  border-radius: 20px !important;
+  box-shadow: 0 2px 8px var(--tafel-shadow) !important;
+  padding: 8px 16px !important;
+  transition: opacity 0.15s, background-color 0.15s !important;
+}
+
+.tafelCard:hover,
+.tafelCard:focus {
+  opacity: 0.9 !important;
+}
+
+.tafelCard--active {
+  background-color: var(--tafel-primary) !important;
+}
+
+.tafelCard--inactive {
+  background-color: var(--tafel-secondary) !important;
+}
+
+.tafelCardTitle {
+  font-weight: 700 !important;
+  margin: 0 !important;
+  color: #ffffff !important;
+  }
+
+.tafelCard--inactive .tafelCardTitle {
+  color: var(--tafel-primary) !important;
+}
+
+.tafelCardStatus {
+  font-weight: 600 !important;
+  color: rgba(255, 255, 255, 0.9) !important;
+}
+
+.tafelCard--inactive .tafelCardStatus {
+  color: rgba(43, 48, 120, 0.85) !important;
+}
+
+.tafelCard .MuiSwitch-root {
+  margin-left: 8px !important;
+}
+
+.tafelCard--active .MuiSwitch-switchBase.Mui-checked {
+  color: var(--tafel-primary-contrast) !important;
+}
+
+.tafelCard--active .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track {
+  background-color: rgba(255, 255, 255, 0.6) !important;
+}
+
+.tafelCard--inactive .MuiSwitch-switchBase.Mui-checked {
+  color: var(--tafel-primary) !important;
+}
+
+.tafelCard--inactive .MuiSwitch-switchBase.Mui-checked + .MuiSwitch-track {
+  background-color: rgba(43, 48, 120, 0.35) !important;
+}
+
+.tafelCard .MuiSwitch-track {
+  opacity: 1 !important;
+}
+
+.tafelCardActions .MuiSvgIcon-root {
+  color: var(--tafel-primary-contrast) !important;
+}
+
+.tafelCard--inactive .tafelCardActions .MuiSvgIcon-root {
+  color: var(--tafel-primary) !important;
+}

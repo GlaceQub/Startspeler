@@ -1,0 +1,236 @@
+package com.startspeler.js
+
+import com.startspeler.dto.CategoryDto
+import com.startspeler.dto.InventoryDto
+import com.startspeler.dto.ProductMinDto
+import com.startspeler.dto.InventoryUpdateRequest
+import com.startspeler.ui.InventoryPage
+import com.startspeler.ui.InventoryView
+import kotlinx.browser.window
+import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.await
+import kotlinx.coroutines.launch
+import kotlinx.serialization.builtins.ListSerializer
+import kotlinx.serialization.encodeToString
+import kotlinx.serialization.json.Json
+import mui.material.Alert
+import mui.material.Snackbar
+import react.FC
+import react.Props
+import react.useEffect
+import react.useEffectOnce
+import react.useState
+
+private val scope = MainScope()
+private val json = Json { ignoreUnknownKeys = true }
+
+external interface InventoryScreenProps : Props
+
+val InventoryScreen = FC<InventoryScreenProps> {
+    val (inventoryItems, setInventoryItems) = useState<List<InventoryDto>>(emptyList())
+    val (products, setProducts) = useState<List<ProductMinDto>>(emptyList())
+    val (merged, setMerged) = useState<List<dynamic>>(emptyList())
+    val (selectedItem, setSelectedItem) = useState<InventoryView?>(null)
+    val (backendUrl, setBackendUrl) = useState<String?>(null)
+    val (loading, setLoading) = useState(false)
+    val (error, setError) = useState<String?>(null)
+    val (snackbarOpen, setSnackbarOpen) = useState(false)
+    val (snackbarMsg, setSnackbarMsg) = useState("")
+    val (categories, setCategories) = useState<List<CategoryDto>>(emptyList())
+
+    useEffectOnce {
+        window.fetch("/config.json")
+            .then { resp ->
+                if (!resp.ok) {
+                    setError("Failed to load config.json: ${resp.status} ${resp.statusText}")
+                    return@then
+                }
+                resp.json().then { d ->
+                    val data = d.unsafeCast<dynamic>()
+                    val url = data.backendUrl as? String
+                    setBackendUrl(url)
+                }
+            }
+            .catch { e -> setError("Error loading config.json: $e") }
+    }
+
+    useEffect(dependencies = arrayOf(backendUrl)) {
+        if (backendUrl == null) return@useEffect
+        setLoading(true)
+        scope.launch {
+            try {
+                val invResp = window.fetch(backendUrl.trimEnd('/') + "/inventory").await()
+                val invText = invResp.text().await()
+                if (!invResp.ok) {
+                    setError("Failed to fetch inventory: ${invResp.status} ${invResp.statusText}")
+                    setInventoryItems(emptyList())
+                } else {
+                    val invList = json.decodeFromString(ListSerializer(InventoryDto.serializer()), invText)
+                    setInventoryItems(invList)
+                }
+
+                val prodResp = window.fetch(backendUrl.trimEnd('/') + "/products").await()
+                val prodText = prodResp.text().await()
+                if (prodResp.ok) {
+                    val prodList = json.decodeFromString(ListSerializer(ProductMinDto.serializer()), prodText)
+                    setProducts(prodList)
+                } else {
+                    setProducts(emptyList())
+                }
+
+                val catResp = window.fetch(backendUrl.trimEnd('/') + "/categories").await()
+                val catText = catResp.text().await()
+                if (catResp.ok) {
+                    val catList = json.decodeFromString(ListSerializer(CategoryDto.serializer()), catText)
+                    setCategories(catList)
+                } else {
+                    setCategories(emptyList())
+                }
+            } catch (e: Throwable) {
+                setError("Fout bij het ophalen van inventory: $e")
+            } finally {
+                setLoading(false)
+            }
+        }
+    }
+
+    useEffect(dependencies = arrayOf(inventoryItems, products, categories)) {
+        val prodMap = products.associateBy { it.id }
+        val catMap = categories.associateBy { it.id }
+
+        val viewList = inventoryItems.map { inv ->
+            val p = prodMap[inv.productId]
+            val catId = p?.categoryId
+            val catName = catId?.let { catMap[it]?.name }
+
+            val obj: dynamic = js("{}")
+            obj.id = inv.id
+            obj.productId = inv.productId
+            obj.productName = p?.name ?: "Product #${inv.productId}"
+            obj.categoryId = catId
+            obj.categoryName = catName ?: (if (catId != null) "Categorie #$catId" else "Geen categorie")
+            obj.quantity = inv.quantity
+            obj.minimumQuantity = inv.minimumQuantity
+            obj.lastUpdated = inv.lastUpdated
+            obj
+        }
+
+        setMerged(viewList)
+    }
+
+    val handleEdit: (InventoryView) -> Unit = { item ->
+        if (backendUrl == null) {
+            setSnackbarMsg("Backend URL niet geladen.")
+            setSnackbarOpen(true)
+        } else {
+            scope.launch {
+                try {
+                    val getResp = window.fetch(backendUrl.trimEnd('/') + "/inventory/${item.id}").await()
+                    val getText = getResp.text().await()
+                    if (getResp.ok) {
+                        val current = json.decodeFromString(InventoryDto.serializer(), getText)
+                        val inputQty = window.prompt(
+                            "Nieuwe voorraad voor ${item.productName ?: "Product #${item.productId}"}",
+                            current.quantity.toString()
+                        )
+                        val newQty = inputQty?.toIntOrNull()
+                        if (inputQty == null) {
+                        } else if (newQty == null || newQty < 0) {
+                            setSnackbarMsg("Voer een geldige voorraad (>= 0) in.")
+                            setSnackbarOpen(true)
+                        } else {
+                            val inputMin = window.prompt(
+                                "Nieuwe minimale voorraad (leeg laten voor ongewijzigd)",
+                                current.minimumQuantity?.toString() ?: ""
+                            )
+                            val newMin = inputMin?.ifBlank { null }?.toIntOrNull() ?: current.minimumQuantity
+                            val req = InventoryUpdateRequest(quantity = newQty, minimumQuantity = newMin)
+                            val bodyStr = json.encodeToString(req)
+                            val init: dynamic = js("{}")
+                            init.method = "PUT"
+                            init.headers = js("{ 'Content-Type': 'application/json' }")
+                            init.body = bodyStr
+                            val putResp = window.fetch(backendUrl.trimEnd('/') + "/inventory/${item.id}", init).await()
+                            val putText = putResp.text().await()
+                            if (putResp.ok) {
+                                val updated = json.decodeFromString(InventoryDto.serializer(), putText)
+                                setInventoryItems(inventoryItems.map { if (it.id == updated.id) updated else it })
+                                setSelectedItem(item)
+                                setSnackbarMsg("Voorraad bijgewerkt")
+                                setSnackbarOpen(true)
+                            } else {
+                                setSnackbarMsg("Bijwerken mislukt: ${putResp.status} ${putResp.statusText}")
+                                setSnackbarOpen(true)
+                            }
+                        }
+                    } else {
+                        setSnackbarMsg("Item ophalen mislukt: ${getResp.status} ${getResp.statusText}")
+                        setSnackbarOpen(true)
+                    }
+                } catch (e: Throwable) {
+                    console.error("Fout bij bewerken:", e)
+                    setSnackbarMsg("Fout bij bewerken: $e")
+                    setSnackbarOpen(true)
+                }
+            }
+        }
+    }
+
+    val handleDelete: (InventoryView) -> Unit = { item ->
+        if (backendUrl == null) {
+            setSnackbarMsg("Backend URL niet geladen.")
+            setSnackbarOpen(true)
+        } else {
+            val confirmed = window.confirm("Weet je zeker dat je inventory item #${item.id} wilt verwijderen?")
+            if (confirmed) {
+                scope.launch {
+                    try {
+                        val url = backendUrl.trimEnd('/') + "/inventory/${item.id}"
+                        val init: dynamic = js("{}")
+                        init.method = "DELETE"
+                        val resp = window.fetch(url, init).await()
+                        val respText = resp.text().await()
+                        if (resp.ok) {
+                            setInventoryItems(inventoryItems.filter { it.id != item.id })
+                            setSelectedItem { null }
+                            setSnackbarMsg("Inventory item verwijderd")
+                            setSnackbarOpen(true)
+                        } else {
+                            setSnackbarMsg("Verwijderen mislukt: ${resp.status} ${resp.statusText}")
+                            setSnackbarOpen(true)
+                        }
+                    } catch (e: Throwable) {
+                        console.error("Fout bij verwijderen:", e)
+                        setSnackbarMsg("Fout bij verwijderen: $e")
+                        setSnackbarOpen(true)
+                    }
+                }
+            }
+        }
+    }
+
+    val handleSelect: (InventoryView?) -> Unit = { item ->
+        setSelectedItem(item)
+    }
+
+    InventoryPage {
+        this.items = merged.unsafeCast<List<InventoryView>>()
+        this.loading = loading
+        this.error = error
+        this.onEdit = handleEdit
+        this.onDelete = handleDelete
+        this.onSelect = handleSelect
+        this.selectedItem = selectedItem
+    }
+
+    Snackbar {
+        open = snackbarOpen
+        autoHideDuration = 3000
+        onClose = { _, _ -> setSnackbarOpen(false) }
+        Alert {
+            severity = "info"
+            sx = js("{ width: '100%' }")
+            +snackbarMsg
+        }
+    }
+}

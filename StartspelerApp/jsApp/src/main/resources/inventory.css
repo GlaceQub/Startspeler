@@ -1,0 +1,153 @@
+/* Variabelen alleen binnen Inventory-root, verwijzen naar je bestaande theme-variabelen */
+.inventoryRoot {
+    --inventory-primary: var(--startspeler-primary);
+    --inventory-primary-contrast: var(--startspeler-primary-contrast);
+    --inventory-shadow: var(--startspeler-shadow);
+}
+
+/* Root layout */
+.inventoryRoot {
+    display: flex !important;
+    flex-direction: row !important;
+    width: 100% !important;
+    min-height: 80vh !important;
+    box-sizing: border-box !important;
+    overflow-x: hidden !important;
+}
+.inventoryLeft {
+    flex: 0 0 70% !important;
+    padding-right: 24px !important;
+    box-sizing: border-box !important;
+    min-width: 0 !important;
+}
+.inventoryRight {
+    flex: 0 0 30% !important;
+    padding-left: 24px !important;
+    box-sizing: border-box !important;
+    min-width: 0 !important;
+}
+
+/* Paper containers */
+.inventoryPaper {
+    padding: 16px !important;
+    border-radius: 20px !important;
+    box-shadow: 0 2px 8px var(--inventory-shadow) !important;
+}
+
+/* Header links */
+.inventoryHeader {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    margin-bottom: 8px !important;
+}
+
+/* Zoekbalk */
+.inventorySearch .MuiOutlinedInput-root {
+    border-radius: 20px !important;
+    background-color: #f6f6f6 !important;
+}
+.inventorySearch .MuiOutlinedInput-notchedOutline {
+    border-color: transparent !important;
+}
+
+/* Primaire actieknop, gebruikt de gescope-de inventory primary kleur */
+.inventoryPrimaryBtn {
+    background-color: var(--inventory-primary) !important;
+    color: var(--inventory-primary-contrast) !important;
+    border-radius: 20px !important;
+    box-shadow: 0 2px 8px var(--inventory-shadow) !important;
+    text-transform: none !important;
+}
+.inventoryPrimaryBtn:hover,
+.inventoryPrimaryBtn:focus {
+    opacity: 0.9 !important;
+}
+
+/* Lijstitem als “card” in primaire kleur, ook gescope-de variabelen */
+.inventoryCard {
+    background-color: var(--inventory-primary) !important;
+    border-radius: 20px !important;
+    box-shadow: 0 2px 8px var(--inventory-shadow) !important;
+    margin: 8px 0 !important;
+    padding: 8px 16px !important;
+    transition: opacity 0.15s, background-color 0.15s !important;
+}
+.inventoryCard:hover,
+.inventoryCard:focus {
+    opacity: 0.85 !important;
+}
+.inventoryCard .MuiListItemText-primary {
+    color: var(--inventory-primary-contrast) !important;
+    font-weight: 600 !important;
+}
+.inventoryCard .MuiListItemText-secondary {
+    color: rgba(255, 255, 255, 0.9) !important;
+}
+
+
+.inventoryCardLow {
+    background-color: var(--startspeler-secondary) !important;
+}
+
+.inventoryCardLow .MuiListItemText-primary {
+    color: var(--startspeler-primary) !important;
+}
+
+.inventoryCardLow .MuiListItemText-secondary {
+    color: rgba(43, 48, 120, 0.85) !important;
+}
+
+.inventoryCardLow .MuiSvgIcon-root {
+    color: var(--startspeler-primary) !important;
+}
+
+/* Edit/Delete icon buttons op een donkere kaart */
+.inventoryAction .MuiSvgIcon-root {
+    color: var(--inventory-primary-contrast) !important;
+}
+
+/* Detailkaart rechts */
+.inventoryDetailsCard {
+    font-family: inherit !important;
+    border-radius: 20px !important;
+    box-shadow: 0 2px 8px var(--inventory-shadow) !important;
+    padding: 16px !important;
+    background-color: var(--startspeler-secondary) !important;
+}
+
+.inventoryDetailsCard,
+.inventoryDetailsCard * {
+    color: var(--startspeler-text) !important;
+}
+
+.inventoryDetailsTitle {
+    font-weight: 700 !important;
+    margin-bottom: 8px !important;
+}
+
+.inventoryDetailsRow {
+    margin: 4px 0 !important;
+}
+
+
+/* Zorg dat de detailkaart binnen de echte rechterkolom-selector extra styling krijgt */
+.inventoryRight .inventoryDetailsCard {
+    background-color: var(--startspeler-secondary) !important;
+    box-shadow: 0 2px 8px var(--inventory-shadow) !important;
+}
+
+/* Maak productnamen in de lijst wit */
+.inventoryCard .MuiListItemText-primary {
+    color: #ffffff !important;
+}
+
+/* Maak de tekst van de "Nieuw Inventory item" knop wit */
+.inventoryPrimaryBtn {
+    color: #ffffff !important;
+}
+
+/* Optioneel: iconen in de knop ook wit */
+.inventoryPrimaryBtn .MuiSvgIcon-root {
+    color: #ffffff !important;
+}

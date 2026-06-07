@@ -1,0 +1,25 @@
+/* CategoryTile button styles */
+.categoryTile {
+    background-color: var(--startspeler-primary) !important;
+    border-radius: 20px !important;
+    box-shadow: 0 2px 8px var(--startspeler-primary) !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    position: relative !important;
+    transition: opacity 0.15s, background-color 0.15s !important;
+}
+.categoryTile:hover,
+.categoryTile:focus {
+    background-color: var(--startspeler-primary) !important;
+    opacity: 0.85 !important;
+}
+.categoryTile:active {
+    background-color: var(--startspeler-primary) !important;
+    opacity: 1 !important;
+}
+.categoryTile.Mui-disabled {
+    background-color: var(--startspeler-primary) !important;
+    cursor: not-allowed !important;
+    opacity: 0.5 !important;
+}
