@@ -15,6 +15,14 @@ import react.useState
 
 private fun Float.fmt(): String { val n: dynamic = this; return n.toFixed(2) as String }
 
+private fun statusColour(status: String?) = when (status?.lowercase()?.trim()) {
+    "aangemaakt"     -> "#1976d2"  // blue
+    "in behandeling" -> "#ed6c02"  // orange
+    "afgeleverd"     -> "#2e7d32"  // green
+    "betaald"        -> "#00695c"  // teal
+    else             -> "#555555"
+}
+
 external interface OrderOverzichtItemProps : Props {
     var order: OrderOverzichtItem
     var isOpen: Boolean
@@ -41,15 +49,35 @@ val OrderOverzichtItem = FC<OrderOverzichtItemProps> { props ->
         onChange = { _, expanded -> setOpen(expanded) }
         AccordionSummary {
             expandIcon = ExpandMore.create()
+            asDynamic().sx = js("{ minHeight: '48px', '&.Mui-expanded': { minHeight: '48px' }, padding: '0 12px' }")
             Box {
-                sx = js("{ display: 'flex', flexDirection: 'row', gap: '16px', alignItems: 'center', width: '100%' }")
-                Typography { variant = mui.material.styles.TypographyVariant.body2; sx = js("{ width: '80px', minWidth: '80px', maxWidth: '80px', overflow: 'hidden', textOverflow: 'ellipsis' }"); +"${order.id}" }
-                Typography { variant = mui.material.styles.TypographyVariant.body2; sx = js("{ width: '120px', minWidth: '120px', maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis' }"); +"Tafel ${order.tableNumber}" }
-                Typography { variant = mui.material.styles.TypographyVariant.body2; sx = js("{ width: '180px', minWidth: '180px', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis' }"); +order.clientName }
-                Typography { variant = mui.material.styles.TypographyVariant.body2; sx = js("{ width: '120px', minWidth: '120px', maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis' }"); +order.status }
+                sx = js("{ display: 'flex', flexDirection: 'row', gap: '16px', alignItems: 'center', width: '100%', padding: '2px 0' }")
+                Typography { sx = js("{ width: '80px', minWidth: '80px', maxWidth: '80px', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: '0.92rem', fontFamily: '\"Roboto\", system-ui, sans-serif' }"); +"${order.id}" }
+                Typography { sx = js("{ width: '120px', minWidth: '120px', maxWidth: '120px', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: '0.92rem', fontFamily: '\"Roboto\", system-ui, sans-serif' }"); +"Tafel ${order.tableNumber}" }
+                Typography { sx = js("{ width: '180px', minWidth: '180px', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: '0.92rem', fontFamily: '\"Roboto\", system-ui, sans-serif' }"); +order.clientName }
+                // Status shown as a coloured pill
+                Box {
+                    val c = statusColour(order.status)
+                    val pillSx: dynamic = js("({})")
+                    pillSx.width = "130px"
+                    pillSx.minWidth = "130px"
+                    pillSx.maxWidth = "130px"
+                    pillSx.display = "inline-flex"
+                    pillSx.alignItems = "center"
+                    pillSx.justifyContent = "center"
+                    pillSx.borderRadius = "10px"
+                    pillSx.padding = "4px 10px"
+                    pillSx.backgroundColor = c
+                    pillSx.color = "#fff"
+                    pillSx.fontSize = "0.92rem"     // matches other columns
+                    pillSx.fontWeight = 600
+                    pillSx.fontFamily = "\"Roboto\", system-ui, -apple-system, \"Segoe UI\", \"Helvetica Neue\", Arial, sans-serif"
+                    pillSx.lineHeight = "1.4"       // matches MUI Typography default
+                    sx = pillSx
+                    +order.status
+                }
                 Typography {
-                    variant = mui.material.styles.TypographyVariant.body2
-                    sx = js("{ width: '180px', minWidth: '180px', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis' }")
+                    sx = js("{ width: '180px', minWidth: '180px', maxWidth: '180px', overflow: 'hidden', textOverflow: 'ellipsis', fontSize: '0.92rem', fontFamily: '\"Roboto\", system-ui, sans-serif' }")
                     +formatUtcTimestampForDisplay(order.createdAt, emptyFallback = "")
                 }
             }
@@ -65,7 +93,7 @@ val OrderOverzichtItem = FC<OrderOverzichtItemProps> { props ->
                     }
                 }
                 Box {
-                    sx = js("{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: '16px', paddingTop: '12px', borderTop: '2px solid #1976d2', width: 'calc(100% - 24px)', marginLeft: '12px' }")
+                    sx = js("{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', marginTop: '16px', paddingTop: '12px', borderTop: '1px solid #1976d2', width: 'calc(100% - 24px)', marginLeft: '12px' }")
                     Box {
                         sx = js("{ display: 'flex', flexDirection: 'column', gap: '2px' }")
                         if (discountPct != null && discountPct > 0f) {
@@ -92,31 +120,31 @@ val OrderOverzichtItem = FC<OrderOverzichtItemProps> { props ->
                     Box {
                         sx = js("{ display: 'flex', gap: '8px', flexWrap: 'wrap', justifyContent: 'flex-end' }")
                         if (order.canGoToPreviousStatus && order.previousStatusLabel != null) {
+                            val c = statusColour(order.previousStatusLabel)
+                            val bSx: dynamic = js("({})")
+                            bSx.borderColor = c; bSx.color = c
                             mui.material.Button {
                                 variant = mui.material.ButtonVariant.outlined
-                                color = mui.material.ButtonColor.primary
                                 size = mui.material.Size.small
-                                onClick = {
-                                    setStatusDirection("previous")
-                                    setShowStatusModal(true)
-                                }
+                                sx = bSx
+                                onClick = { setStatusDirection("previous"); setShowStatusModal(true) }
                                 +order.previousStatusLabel!!
                             }
                         }
                         if (order.canGoToNextStatus && order.nextStatusLabel != null) {
+                            val label = if (order.canCheckout) "Betalen" else order.nextStatusLabel!!
+                            val c = if (order.canCheckout) statusColour("betaald") else statusColour(order.nextStatusLabel)
+                            val bSx: dynamic = js("({})")
+                            bSx.backgroundColor = c; bSx.color = "#fff"; bSx.borderColor = c
                             mui.material.Button {
                                 variant = mui.material.ButtonVariant.contained
-                                color = if (order.canCheckout) mui.material.ButtonColor.primary else mui.material.ButtonColor.secondary
                                 size = mui.material.Size.small
+                                sx = bSx
                                 onClick = {
-                                    if (order.canCheckout) {
-                                        props.onCheckout?.invoke()
-                                    } else {
-                                        setStatusDirection("next")
-                                        setShowStatusModal(true)
-                                    }
+                                    if (order.canCheckout) props.onCheckout?.invoke()
+                                    else { setStatusDirection("next"); setShowStatusModal(true) }
                                 }
-                                +(if (order.canCheckout) "Betalen" else order.nextStatusLabel!!)
+                                +label
                             }
                         }
                         mui.material.Button {
@@ -125,9 +153,7 @@ val OrderOverzichtItem = FC<OrderOverzichtItemProps> { props ->
                             size = mui.material.Size.small
                             disabled = !order.canEdit
                             onClick = {
-                                if (order.canEdit) {
-                                    kotlinx.browser.window.location.hash = "#/bestel/edit/${order.id}"
-                                }
+                                if (order.canEdit) kotlinx.browser.window.location.hash = "#/bestel/edit/${order.id}"
                             }
                             +"Aanpassen"
                         }

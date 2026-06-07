@@ -25,7 +25,7 @@ val BestellingenList = FC<BestellingenListProps> { props ->
         sx = js("{ display: 'flex', flexDirection: 'column', gap: '0' }")
 
         Box {
-            sx = js("{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '4px 16px', borderBottom: '1px solid #e0e0e0', background: '#fafafa', fontSize: '0.95rem', fontWeight: 600, color: '#666', gap: '16px' }")
+            sx = js("{ display: 'flex', flexDirection: 'row', alignItems: 'center', padding: '6px 16px', borderBottom: '1px solid #e0e0e0', background: '#fafafa', fontSize: '0.85rem', fontWeight: 600, color: '#666', gap: '16px', fontFamily: '\"Roboto\", system-ui, sans-serif' }")
             Typography { sx = js("{ width: '80px', minWidth: '80px', maxWidth: '80px', paddingLeft: '8px' }"); +"ID" }
             Typography { sx = js("{ width: '120px', minWidth: '120px', maxWidth: '120px' }"); +"Tafel" }
             Typography { sx = js("{ width: '180px', minWidth: '180px', maxWidth: '180px' }"); +"Klant" }

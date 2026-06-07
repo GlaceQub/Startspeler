@@ -13,8 +13,8 @@ import org.w3c.fetch.Headers
 import org.w3c.fetch.RequestInit
 import react.FC
 import react.Props
-import react.useEffect
 import react.useEffectOnce
+import react.useEffect
 import react.useState
 
 val BestellingenScreen = FC<Props> {
@@ -278,6 +278,20 @@ val BestellingenScreen = FC<Props> {
                 fetchClients()
                 fetchOrders(defaultFromTo.first, defaultFromTo.second)
             }
+        }
+    }
+
+    val (pollTick, setPollTick) = useState(0)
+
+    // Tick every 30 seconds
+    useEffectOnce {
+        window.setInterval({ setPollTick { it + 1 } }, 30_000)
+    }
+
+    // Re-fetch on each tick using the latest dateFrom/dateTo from state
+    useEffect(dependencies = arrayOf(pollTick)) {
+        if (backendUrl != null && pollTick > 0) {
+            MainScope().launch { fetchOrders(dateFrom, dateTo) }
         }
     }
 

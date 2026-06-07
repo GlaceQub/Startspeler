@@ -64,15 +64,33 @@ val BestellingenFilterBar = FC<BestellingenFilterBarProps> { props ->
                 sx = js("{ display: 'flex', gap: '8px', flexWrap: 'wrap' }")
                 props.statusOptions.forEach { status ->
                     val selected = props.selectedStatuses.contains(status)
+
+                    val colour = when (status) {
+                        "aangemaakt"     -> "#1976d2"  // blue
+                        "in behandeling" -> "#ed6c02"  // orange
+                        "afgeleverd"     -> "#2e7d32"  // green
+                        "betaald"        -> "#00695c"  // teal
+                        else             -> "#555555"
+                    }
+
+                    // Build sx dynamically so the colour value is actually injected
+                    val buttonSx: dynamic = js("({})")
+                    buttonSx.textTransform = "none"
+                    buttonSx.fontWeight = if (selected) 700 else 500
+                    buttonSx.borderColor = colour
+                    buttonSx.color = if (selected) "#ffffff" else colour
+                    buttonSx.backgroundColor = if (selected) colour else "#ffffff"
+
                     Button {
-                        asDynamic().className = "btnPrimary"
                         variant = if (selected) mui.material.ButtonVariant.contained else mui.material.ButtonVariant.outlined
-                        asDynamic().color = if (selected) "primary" else "inherit"
+                        sx = buttonSx
                         onClick = {
-                            val newStatuses = if (selected) props.selectedStatuses.filter { it != status } else props.selectedStatuses + status
+                            val newStatuses = if (selected)
+                                props.selectedStatuses.filter { it != status }
+                            else
+                                props.selectedStatuses + status
                             props.onStatusChange(newStatuses)
                         }
-                        sx = js("{ textTransform: 'none', fontWeight: 500 }")
                         +status
                     }
                 }
