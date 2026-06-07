@@ -33,7 +33,7 @@ A. Quick local dev (fastest path; use Supabase cloud for auth & dev DB)
    - Create `StartspelerApp/public/config.example.json` and have teammates copy to `config.json` (not committed). See example below.
 3. Run frontend dev server:
    - From repo root:
-     ./gradlew :jsApp:browserDevelopmentRun
+    ./gradlew :jsApp:jsBrowserDevelopmentRun
    - Open: http://localhost:3000
 4. Provide a lightweight backend (if you don't have one yet)
    - Option: create a simple Ktor stub locally (see "Backend quick scaffold" below).
@@ -102,7 +102,7 @@ F. Remote demo (only when needed) — keep this optional
 
 G. Build & deploy frontend to Netlify (free)
 1. In Netlify:
-   - Build command: `./gradlew :jsApp:browserProductionWebpack`
+  - Build command: `./gradlew :jsApp:jsBrowserProductionWebpack`
    - Publish directory: `jsApp/build/distributions`
 2. Use runtime `config.json` on Netlify (upload /config.json or expose it as a static file) to change backend URL for demos without a rebuild.
 
@@ -217,9 +217,9 @@ What to test (short list)
 
 Helpful commands (copy/paste)
 - Dev frontend:
-  ./gradlew :jsApp:browserDevelopmentRun
+  ./gradlew :jsApp:jsBrowserDevelopmentRun
 - Build frontend production:
-  ./gradlew :jsApp:browserProductionWebpack
+  ./gradlew :jsApp:jsBrowserProductionWebpack
 - Run backend (stub or real):
   ./gradlew :backend:run
 - Start local MySQL (docker-compose):

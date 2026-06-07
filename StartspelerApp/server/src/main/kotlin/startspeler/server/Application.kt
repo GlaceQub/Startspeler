@@ -137,7 +137,7 @@ fun main() {
     //endregion
 
     //region Ktor HTTP server
-    embeddedServer(Netty, port = 8080) {
+    embeddedServer(Netty, host = "0.0.0.0", port = 8080) {
         install(ContentNegotiation) { json() }
         install(CORS) {
             anyHost()

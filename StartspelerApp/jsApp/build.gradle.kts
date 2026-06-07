@@ -1,5 +1,6 @@
 import java.util.Properties
 import java.io.FileInputStream
+import java.io.File
 
 val versions = Properties().apply {
     load(FileInputStream("${projectDir}/versions.properties"))
@@ -17,6 +18,38 @@ val kotlinMuiVersion = versions["kotlinMuiVersion"] as String
 val kotlinMuiIconsVersion = versions["kotlinMuiIconsVersion"] as String
 val reactNpmVersion = versions["reactNpmVersion"] as String
 val reactDomNpmVersion = versions["reactDomNpmVersion"] as String
+
+fun parseDotEnv(file: File): Map<String, String> {
+    if (!file.exists()) return emptyMap()
+
+    return file.readLines()
+        .map { it.trim() }
+        .filter { it.isNotEmpty() && !it.startsWith("#") && it.contains('=') }
+        .associate { line ->
+            val separator = line.indexOf('=')
+            val key = line.substring(0, separator).trim()
+            val value = line.substring(separator + 1).trim().removeSurrounding("\"")
+            key to value
+        }
+}
+
+val envCandidates = listOf(
+    rootDir.resolve(".env"),
+    rootDir.resolve("server/.env"),
+    rootDir.parentFile.resolve("Database/docker/.env")
+)
+
+val envValues = buildMap<String, String> {
+    envCandidates.forEach { candidate ->
+        putAll(parseDotEnv(candidate))
+    }
+}
+
+val configuredBackendUrl =
+    providers.gradleProperty("backendUrl").orNull
+        ?: System.getenv("BACKEND_URL")
+        ?: envValues["BACKEND_URL"]
+        ?: "http://localhost:8080"
 
 plugins {
     kotlin("multiplatform")
@@ -64,7 +97,26 @@ kotlin {
 }
 
 tasks.named<Copy>("jsProcessResources") {
+    exclude("public/config.json")
+
     from("src/main/resources/public") {
+        exclude("config.json")
+        into("")
+    }
+
+    doFirst {
+        val generatedConfigDir = layout.buildDirectory.dir("generated/js-config").get().asFile
+        generatedConfigDir.mkdirs()
+        File(generatedConfigDir, "config.json").writeText(
+            """
+            {
+              "backendUrl": "$configuredBackendUrl"
+            }
+            """.trimIndent()
+        )
+    }
+
+    from(layout.buildDirectory.dir("generated/js-config")) {
         into("")
     }
 }

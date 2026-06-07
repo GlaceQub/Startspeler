@@ -3,6 +3,8 @@ plugins {
     kotlin("plugin.serialization")
 }
 
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+
 kotlin {
     jvm() // <-- Add JVM target for server compatibility
     js(IR) {
@@ -30,5 +32,13 @@ kotlin {
                 // JVM-specific dependencies can be added here if needed
             }
         }
+    }
+
+    jvmToolchain(17)
+}
+
+tasks.withType<org.jetbrains.kotlin.gradle.tasks.KotlinJvmCompile>().configureEach {
+    compilerOptions {
+        jvmTarget.set(JvmTarget.JVM_17)
     }
 }
