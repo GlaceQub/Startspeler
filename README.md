@@ -12,3 +12,16 @@ inloggegevens zitten in de .env file (niet mee gepublished op github wegens secu
 De applicatie wordt nog lokaal op een device gehost en niet op een webserver.
 ## instructies
 Om de applicatie zelf te draaien zijn instructies terug te vinden op de plaats `StartspelerApp\LOCAL-RUN.md`
+
+# Voorbeeld screenshots
+## Bestellingen overview
+![alt text](screenshots/bestellingen.png)
+## Menu
+### Menu
+![alt text](screenshots/Menu.png)
+
+### Winkelwagen
+![alt text](screenshots/winkelwagen.png)
+
+### Betalen
+![alt text](screenshots/Betalen.png)
