@@ -38,8 +38,19 @@ http://YOUR_WIFI_IP:8081
 
 1. Run `ipconfig` again.
 2. Update `BACKEND_URL` in `Database/docker/.env` with the new Wi-Fi IP.
-3. Restart the frontend dev server.
-4. Refresh the page on your laptop or phone.
+3. Regenerate the frontend config:
+
+```powershell
+& "c:\StartspelerProject\Startspeler\StartspelerApp\gradlew.bat" -p "c:\StartspelerProject\Startspeler\StartspelerApp" :jsApp:jsProcessResources --rerun-tasks
+```
+
+4. Restart the frontend dev server:
+
+```powershell
+& "c:\StartspelerProject\Startspeler\StartspelerApp\gradlew.bat" --no-daemon -p "c:\StartspelerProject\Startspeler\StartspelerApp" :jsApp:jsBrowserDevelopmentRun
+```
+
+5. Refresh the page on your laptop or phone.
 
 ## Quick check
 
